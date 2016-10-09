@@ -23,7 +23,7 @@ import qualified "parsec" Text.Parsec.Prim as P
 newtype ParsecDSL s u m a = ParsecDSL {
     runParsecDSL :: Free (ParsecF s u m) a
     }
-    deriving (Functor, Applicative, Monad)
+    deriving (Functor, Applicative, Monad, Show)
 
 instance Alternative (ParsecDSL s u m) where
     empty = parserZero

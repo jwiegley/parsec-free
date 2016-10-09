@@ -2,9 +2,9 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                parsec-free
-version:             3.1.11.1
-synopsis:            Parsec as a deeply-embedded DSL, for debugging and analysis
--- description:
+version:             3.1.11.2
+synopsis:            Parsec API encoded as a deeply-embedded DSL, for debugging and analysis
+description:         Parsec API encoded as a deeply-embedded DSL, for debugging and analysis
 homepage:            https://github.com/jwiegley/parsec-free
 license:             MIT
 license-file:        LICENSE
@@ -13,8 +13,11 @@ maintainer:          johnw@newartisans.com
 -- copyright:
 category:            Text
 build-type:          Simple
-extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
+
+Source-repository head
+  type: git
+  location: git://github.com/jwiegley/parsec-free.git
 
 library
   exposed-modules:
@@ -45,7 +48,7 @@ library
     , transformers >=0.4 && <0.6
     , parsec >= 3.1.11
   default-language:    Haskell2010
-  extensions:
+  default-extensions:
      PackageImports,
      ExistentialQuantification,
      PolymorphicComponents,

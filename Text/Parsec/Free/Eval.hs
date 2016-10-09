@@ -67,10 +67,10 @@ eval fpre fnd = go
     phi (Plabel p a k)           = P.label (go p) a >>= k
     phi (Plabels p a k)          = P.labels (go p) a >>= k
     phi (Ptry p k)               = fnd (P.try $ go p) >>= k
-    phi (Pchainl p q a k)        = P.chainl (go p) (iterM phi (runParsecDSL q)) a >>= k
-    phi (Pchainl1 p q k)         = P.chainl1 (go p) (iterM phi (runParsecDSL q)) >>= k
-    phi (Pchainr p q a k)        = P.chainr (go p) (iterM phi (runParsecDSL q)) a >>= k
-    phi (Pchainr1 p q k)         = P.chainr1 (go p) (iterM phi (runParsecDSL q)) >>= k
+    phi (Pchainl p q a k)        = P.chainl (go p) (go q) a >>= k
+    phi (Pchainl1 p q k)         = P.chainl1 (go p) (go q) >>= k
+    phi (Pchainr p q a k)        = P.chainr (go p) (go q) a >>= k
+    phi (Pchainr1 p q k)         = P.chainr1 (go p) (go q) >>= k
     phi (Pchoice xs k)           = P.choice (map go xs) >>= k
     phi (Pcount n p k)           = P.count n (go p) >>= k
     phi (PlookAhead p k)         = P.lookAhead (go p) >>= k

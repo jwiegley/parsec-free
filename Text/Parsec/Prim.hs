@@ -177,10 +177,10 @@ runPT :: (Monad m, Stream s m t)
       => ParsecT s u m a -> u -> SourceName -> s -> m (Either ParseError a)
 runPT = P.runPT . F.eval (const id) id . runParsecT
 
-runPTLog :: (MonadIO m, Stream s m t)
-         => ParsecT s (u, F.LogType) m a -> u -> F.LogType -> SourceName -> s
+runPTLog :: (MonadIO m, MonadReader F.LogType m, Stream s m t)
+         => ParsecT s u m a -> u -> SourceName -> s
          -> m (Either ParseError a)
-runPTLog (ParsecT p) u l = P.runPT (F.evalLog p) (u, l)
+runPTLog (ParsecT p) = P.runPT (F.evalLog p)
 
 runP :: (Stream s Identity t)
      => Parsec s u a -> u -> SourceName -> s -> Either ParseError a
@@ -190,10 +190,9 @@ runParserT :: (Stream s m t)
            => ParsecT s u m a -> u -> SourceName -> s -> m (Either ParseError a)
 runParserT = runPT
 
-runParserTLog :: (MonadIO m, Stream s m t)
-              => ParsecT s (u, F.LogType) m a
+runParserTLog :: (MonadIO m, MonadReader F.LogType m, Stream s m t)
+              => ParsecT s u m a
               -> u
-              -> F.LogType
               -> SourceName
               -> s
               -> m (Either ParseError a)
@@ -215,15 +214,14 @@ parseTest p input
                        print err
         Right x  -> print x
 
-parseTestLog :: (MonadIO m, Stream s m t, Show a)
-             => ParsecT s ((), F.LogType) m a -> s -> m ()
+parseTestLog :: (MonadIO m, MonadReader F.LogType m, Stream s m t, Show a)
+             => ParsecT s () m a -> s -> m ()
 parseTestLog p input = do
-    lg <- liftIO $ newIORef []
-    eres <- runPTLog p () lg "" input
+    eres <- runPTLog p () "" input
     liftIO $ case eres of
         Left err -> do putStr "parse error at "
                        print err
-        Right x  -> print x
+        Right x -> print x
 
 -- | Returns the full parser state as a 'State' record.
 

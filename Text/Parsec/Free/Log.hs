@@ -5,6 +5,8 @@
 module Text.Parsec.Free.Log where
 
 import                    Control.Monad.IO.Class
+import                    Control.Monad.Trans.Class
+import                    Control.Monad.Reader.Class
 import                    Control.Monad.Trans.State
 import                    Data.IORef
 import                    Text.Parsec.Free
@@ -13,7 +15,7 @@ import qualified "parsec" Text.Parsec.Prim as P
 
 type LogType = IORef [ParseLog]
 
-type LogParsecT s u m a = P.ParsecT s (u, LogType) m a
+type LogParsecT s u m a = MonadReader LogType m => P.ParsecT s u m a
 
 data ParseLog
     = forall s u m a. ParseAttempt (ParsecF s u m a)
@@ -24,7 +26,7 @@ data ParseLog
     | Dedent
 
 renderLog :: [ParseLog] -> String
-renderLog l = evalState (go (0 :: Int) l) (1 :: Int)
+renderLog l = evalState (go (0 :: Int) (reverse l)) (1 :: Int)
   where
     go _ [] = return ""
     go n (x:xs) = case x of
@@ -56,7 +58,7 @@ renderLog l = evalState (go (0 :: Int) l) (1 :: Int)
 
 appendLog :: MonadIO m => ParseLog -> LogParsecT s u m ()
 appendLog l = do
-    (_, ref) <- P.getState
+    ref <- lift ask
     liftIO $ modifyIORef ref (l:)
 
 attempt :: MonadIO m
@@ -79,5 +81,5 @@ indented p = do
     return a
 
 evalLog :: (MonadIO m, P.Stream s m t)
-        => ParsecDSL s (u, LogType) m a -> LogParsecT s u m a
+        => ParsecDSL s u m a -> LogParsecT s u m a
 evalLog = eval attempt indented
