@@ -1,4 +1,4 @@
-Welcome to parsec-free, a deep-embedding of the Parsec API, to allow for
+Welcome to `parsec-free`, a deep-embedding of the Parsec API, to allow for
 comprehensive debugging and analysis of Parsec-style parsers.
 
 To use it, simply replace your dependency on `parsec` with `parsec-free`.
