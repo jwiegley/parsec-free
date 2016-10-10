@@ -60,10 +60,13 @@ module Text.Parsec.Prim
 
 
 import qualified Control.Applicative as Applicative (Alternative(..))
+import qualified Control.Exception as E
 import Control.Monad()
+import Control.Monad.Free (hoistFree)
 import Control.Monad.Trans
 import Control.Monad.Identity
 
+import Control.Monad.Trans.Reader (ReaderT(..))
 import Control.Monad.Reader.Class
 import Control.Monad.State.Class
 import Control.Monad.Cont.Class
@@ -174,7 +177,7 @@ manyAccum = F.manyAccum
 
 runPT :: (Monad m, Stream s m t)
       => ParsecT s u m a -> u -> SourceName -> s -> m (Either ParseError a)
-runPT = P.runPT . F.eval (const id) id
+runPT = P.runPT . F.eval
 
 runPTLog :: (MonadIO m, MonadReader F.LogType m, Stream s m t)
          => ParsecT s u m a -> u -> SourceName -> s
@@ -183,7 +186,7 @@ runPTLog = P.runPT . F.evalLog
 
 runP :: (Stream s Identity t)
      => Parsec s u a -> u -> SourceName -> s -> Either ParseError a
-runP p u n s = runIdentity $ P.runPT (F.eval (const id) id p) u n s
+runP p u n s = runIdentity $ P.runPT (F.eval p) u n s
 
 runParserT :: (Stream s m t)
            => ParsecT s u m a -> u -> SourceName -> s -> m (Either ParseError a)
@@ -213,14 +216,25 @@ parseTest p input
                        print err
         Right x  -> print x
 
-parseTestLog :: (MonadIO m, MonadReader F.LogType m, Stream s m t, Show a)
-             => ParsecT s () m a -> s -> m ()
-parseTestLog p input = do
+parseTestLog' :: (MonadIO m, MonadReader F.LogType m, Stream s m t, Show a)
+              => ParsecT s () m a -> s -> m ()
+parseTestLog' p input = do
     eres <- runPTLog p () "" input
     liftIO $ case eres of
         Left err -> do putStr "parse error at "
                        print err
         Right x -> print x
+
+parseTestLog :: (Stream s (ReaderT F.LogType IO) t, Show a)
+             => ParsecT s () (ReaderT F.LogType IO) a -> s -> IO ()
+parseTestLog p input = do
+    lg <- newIORef []
+    eres <- E.try $ runReaderT (parseTestLog' p input) lg
+    putStrLn $ case eres of
+        Left err -> "EXCEPTION => " ++ show (err :: E.SomeException)
+        Right a  -> "Result => " ++ show a
+    theLog <- readIORef lg
+    putStrLn $ F.renderLog False theLog
 
 -- | Returns the full parser state as a 'State' record.
 

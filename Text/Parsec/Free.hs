@@ -5,6 +5,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Text.Parsec.Free where
 
@@ -59,6 +60,8 @@ instance MonadIO m => MonadIO (ParsecDSL s u m) where
 
 data ParsecF s u m r
     = forall a. Plifted (P.ParsecT s u m a) (a -> r)
+    | Preturn r
+    | Pbind r
     | forall a. Peffect (m a) (a -> r)
 
     | PgetState (u -> r)
@@ -167,214 +170,215 @@ data ParsecF s u m r
     | forall a. PcommaSep1 (ParsecDSL s u m [a]) ([a] -> r)
 
 instance Functor (ParsecF s u m) where
-    fmap f (Plifted p k)            = Plifted p (f . k)
-    fmap f (Peffect m k)            = Peffect m (f . k)
+    fmap f = \case
+        Preturn x              -> Preturn (f x)
+        Pbind r                -> Pbind (f r)
+        Peffect m k            -> Peffect m (f . k)
 
-    fmap f (PgetState k)            = PgetState (f . k)
-    fmap f (PputState u r)          = PputState u (f r)
-    fmap f (PmodifyState g r)       = PmodifyState g (f r)
-    fmap f (PgetPosition k)         = PgetPosition (f . k)
-    fmap f (PsetPosition p r)       = PsetPosition p (f r)
-    fmap f (PgetInput k)            = PgetInput (f . k)
-    fmap f (PsetInput s r)          = PsetInput s (f r)
-    fmap f (PgetParserState k)      = PgetParserState (f . k)
-    fmap f (PsetParserState s k)    = PsetParserState s (f . k)
-    fmap f (PupdateParserState g k) = PupdateParserState g (f . k)
+        PgetState k            -> PgetState (f . k)
+        PputState u r          -> PputState u (f r)
+        PmodifyState g r       -> PmodifyState g (f r)
+        PgetPosition k         -> PgetPosition (f . k)
+        PsetPosition p r       -> PsetPosition p (f r)
+        PgetInput k            -> PgetInput (f . k)
+        PsetInput s r          -> PsetInput s (f r)
+        PgetParserState k      -> PgetParserState (f . k)
+        PsetParserState s k    -> PsetParserState s (f . k)
+        PupdateParserState g k -> PupdateParserState g (f . k)
 
-    fmap f (Ptokens a b c k)        = Ptokens a b c (f . k)
-    fmap f (PtokenPrimEx a b c d k) = PtokenPrimEx a b c d (f . k)
+        Ptokens a b c k        -> Ptokens a b c (f . k)
+        PtokenPrimEx a b c d k -> PtokenPrimEx a b c d (f . k)
 
-    fmap f (PalphaNum k)            = PalphaNum (f . k)
-    fmap f (PanyChar k)             = PanyChar (f . k)
-    fmap f (PanyToken k)            = PanyToken (f . k)
-    fmap f (Pchar x r)              = Pchar x (f r)
-    fmap f (Pcrlf k)                = Pcrlf (f . k)
-    fmap f (Pdigit k)               = Pdigit (f . k)
-    fmap f (PendOfLine k)           = PendOfLine (f . k)
-    fmap f (Peof r)                 = Peof (f r)
-    fmap f (PhexDigit k)            = PhexDigit (f . k)
-    fmap f (Pletter k)              = Pletter (f . k)
-    fmap f (Plower k)               = Plower (f . k)
-    fmap f (Pnewline k)             = Pnewline (f . k)
-    fmap f (PnoneOf xs k)           = PnoneOf xs (f . k)
-    fmap f (PoctDigit k)            = PoctDigit (f . k)
-    fmap f (PoneOf xs k)            = PoneOf xs (f . k)
-    fmap _ (PparserFail s)          = PparserFail s
-    fmap _ PparserZero              = PparserZero
-    fmap f (Psatisfy g k)           = Psatisfy g (f . k)
-    fmap f (Pspace k)               = Pspace (f . k)
-    fmap f (Pspaces r)              = Pspaces (f r)
-    fmap f (Pstring x r)            = Pstring x (f r)
-    fmap f (Ptab k)                 = Ptab (f . k)
-    fmap f (Pupper k)               = Pupper (f . k)
-    fmap _ (Punexpected s)          = Punexpected s
+        PalphaNum k            -> PalphaNum (f . k)
+        PanyChar k             -> PanyChar (f . k)
+        PanyToken k            -> PanyToken (f . k)
+        Pchar x r              -> Pchar x (f r)
+        Pcrlf k                -> Pcrlf (f . k)
+        Pdigit k               -> Pdigit (f . k)
+        PendOfLine k           -> PendOfLine (f . k)
+        Peof r                 -> Peof (f r)
+        PhexDigit k            -> PhexDigit (f . k)
+        Pletter k              -> Pletter (f . k)
+        Plower k               -> Plower (f . k)
+        Pnewline k             -> Pnewline (f . k)
+        PnoneOf xs k           -> PnoneOf xs (f . k)
+        PoctDigit k            -> PoctDigit (f . k)
+        PoneOf xs k            -> PoneOf xs (f . k)
+        PparserFail s          -> PparserFail s
+        PparserZero            -> PparserZero
+        Psatisfy g k           -> Psatisfy g (f . k)
+        Pspace k               -> Pspace (f . k)
+        Pspaces r              -> Pspaces (f r)
+        Pstring x r            -> Pstring x (f r)
+        Ptab k                 -> Ptab (f . k)
+        Pupper k               -> Pupper (f . k)
+        Punexpected s          -> Punexpected s
 
-    fmap f (PparserPlus p q k)      = PparserPlus p q (f . k)
-    fmap f (Plabel p a k)           = Plabel p a (f . k)
-    fmap f (Plabels p a k)          = Plabels p a (f . k)
-    fmap f (Ptry p k)               = Ptry p (f . k)
-    fmap f (Pchainl p q a k)        = Pchainl p q a (f . k)
-    fmap f (Pchainl1 p q k)         = Pchainl1 p q (f . k)
-    fmap f (Pchainr p q a k)        = Pchainr p q a (f . k)
-    fmap f (Pchainr1 p q k)         = Pchainr1 p q (f . k)
-    fmap f (Pchoice xs k)           = Pchoice xs (f . k)
-    fmap f (Pcount n p k)           = Pcount n p (f . k)
-    fmap f (PlookAhead p k)         = PlookAhead p (f . k)
-    fmap f (Pmany p k)              = Pmany p (f . k)
-    fmap f (Pmany1 p k)             = Pmany1 p (f . k)
-    fmap f (PmanyAccum g p k)       = PmanyAccum g p (f . k)
-    fmap f (PnotFollowedBy p r)     = PnotFollowedBy p (f r)
-    fmap f (Poption a p k)          = Poption a p (f . k)
-    fmap f (PoptionMaybe p k)       = PoptionMaybe p (f . k)
-    fmap f (Poptional p r)          = Poptional p (f r)
-    fmap f (PskipMany p r)          = PskipMany p (f r)
-    fmap f (PskipMany1 p r)         = PskipMany1 p (f r)
-    fmap f (PmanyTill p e k)        = PmanyTill p e (f . k)
-    fmap f (Pbetween o c p k)       = Pbetween o c p (f . k)
-    fmap f (PendBy p s k)           = PendBy p s (f . k)
-    fmap f (PendBy1 p s k)          = PendBy1 p s (f . k)
-    fmap f (PsepBy p s k)           = PsepBy p s (f . k)
-    fmap f (PsepBy1 p s k)          = PsepBy1 p s (f . k)
-    fmap f (PsepEndBy p s k)        = PsepEndBy p s (f . k)
-    fmap f (PsepEndBy1 p s k)       = PsepEndBy1 p s (f . k)
+        PparserPlus p q k      -> PparserPlus p q (f . k)
+        Plabel p a k           -> Plabel p a (f . k)
+        Plabels p a k          -> Plabels p a (f . k)
+        Ptry p k               -> Ptry p (f . k)
+        Pchainl p q a k        -> Pchainl p q a (f . k)
+        Pchainl1 p q k         -> Pchainl1 p q (f . k)
+        Pchainr p q a k        -> Pchainr p q a (f . k)
+        Pchainr1 p q k         -> Pchainr1 p q (f . k)
+        Pchoice xs k           -> Pchoice xs (f . k)
+        Pcount n p k           -> Pcount n p (f . k)
+        PlookAhead p k         -> PlookAhead p (f . k)
+        Pmany p k              -> Pmany p (f . k)
+        Pmany1 p k             -> Pmany1 p (f . k)
+        PmanyAccum g p k       -> PmanyAccum g p (f . k)
+        PnotFollowedBy p r     -> PnotFollowedBy p (f r)
+        Poption a p k          -> Poption a p (f . k)
+        PoptionMaybe p k       -> PoptionMaybe p (f . k)
+        Poptional p r          -> Poptional p (f r)
+        PskipMany p r          -> PskipMany p (f r)
+        PskipMany1 p r         -> PskipMany1 p (f r)
+        PmanyTill p e k        -> PmanyTill p e (f . k)
+        Pbetween o c p k       -> Pbetween o c p (f . k)
+        PendBy p s k           -> PendBy p s (f . k)
+        PendBy1 p s k          -> PendBy1 p s (f . k)
+        PsepBy p s k           -> PsepBy p s (f . k)
+        PsepBy1 p s k          -> PsepBy1 p s (f . k)
+        PsepEndBy p s k        -> PsepEndBy p s (f . k)
+        PsepEndBy1 p s k       -> PsepEndBy1 p s (f . k)
 
-    fmap f (Pidentifier t k)        = Pidentifier t (f . k)
-    fmap f (Preserved t s r)        = Preserved t s (f r)
-    fmap f (Poperator t k)          = Poperator t (f . k)
-    fmap f (PreservedOp t s r)      = PreservedOp t s (f r)
-    fmap f (PcharLiteral t k)       = PcharLiteral t (f . k)
-    fmap f (PstringLiteral t k)     = PstringLiteral t (f . k)
-    fmap f (Pnatural t k)           = Pnatural t (f . k)
-    fmap f (Pinteger t k)           = Pinteger t (f . k)
-    fmap f (Pfloat t k)             = Pfloat t (f . k)
-    fmap f (PnaturalOrFloat t k)    = PnaturalOrFloat t (f . k)
-    fmap f (Pdecimal t k)           = Pdecimal t (f . k)
-    fmap f (Phexadecimal t k)       = Phexadecimal t (f . k)
-    fmap f (Poctal t k)             = Poctal t (f . k)
-    fmap f (Psymbol t s k)          = Psymbol t s (f . k)
-    fmap f (Plexeme p k)            = Plexeme p (f . k)
-    fmap f (PwhiteSpace t r)        = PwhiteSpace t (f r)
-    fmap f (Pparens p k)            = Pparens p (f . k)
-    fmap f (Pbraces p k)            = Pbraces p (f . k)
-    fmap f (Pangles p k)            = Pangles p (f . k)
-    fmap f (Pbrackets p k)          = Pbrackets p (f . k)
-    fmap f (Psquares p k)           = Psquares p (f . k)
-    fmap f (Psemi t k)              = Psemi t (f . k)
-    fmap f (Pcomma t k)             = Pcomma t (f . k)
-    fmap f (Pcolon t k)             = Pcolon t (f . k)
-    fmap f (Pdot t k)               = Pdot t (f . k)
-    fmap f (PsemiSep p k)           = PsemiSep p (f . k)
-    fmap f (PsemiSep1 p k)          = PsemiSep1 p (f . k)
-    fmap f (PcommaSep p k)          = PcommaSep p (f . k)
-    fmap f (PcommaSep1 p k)         = PcommaSep1 p (f . k)
+        Pidentifier t k        -> Pidentifier t (f . k)
+        Preserved t s r        -> Preserved t s (f r)
+        Poperator t k          -> Poperator t (f . k)
+        PreservedOp t s r      -> PreservedOp t s (f r)
+        PcharLiteral t k       -> PcharLiteral t (f . k)
+        PstringLiteral t k     -> PstringLiteral t (f . k)
+        Pnatural t k           -> Pnatural t (f . k)
+        Pinteger t k           -> Pinteger t (f . k)
+        Pfloat t k             -> Pfloat t (f . k)
+        PnaturalOrFloat t k    -> PnaturalOrFloat t (f . k)
+        Pdecimal t k           -> Pdecimal t (f . k)
+        Phexadecimal t k       -> Phexadecimal t (f . k)
+        Poctal t k             -> Poctal t (f . k)
+        Psymbol t s k          -> Psymbol t s (f . k)
+        Plexeme p k            -> Plexeme p (f . k)
+        PwhiteSpace t r        -> PwhiteSpace t (f r)
+        Pparens p k            -> Pparens p (f . k)
+        Pbraces p k            -> Pbraces p (f . k)
+        Pangles p k            -> Pangles p (f . k)
+        Pbrackets p k          -> Pbrackets p (f . k)
+        Psquares p k           -> Psquares p (f . k)
+        Psemi t k              -> Psemi t (f . k)
+        Pcomma t k             -> Pcomma t (f . k)
+        Pcolon t k             -> Pcolon t (f . k)
+        Pdot t k               -> Pdot t (f . k)
+        PsemiSep p k           -> PsemiSep p (f . k)
+        PsemiSep1 p k          -> PsemiSep1 p (f . k)
+        PcommaSep p k          -> PcommaSep p (f . k)
+        PcommaSep1 p k         -> PcommaSep1 p (f . k)
 
 instance Show (ParsecF s u m r) where
-    show (Plifted _ _)            = "lifted"
-    show (Peffect _ _)            = "effect"
+    show = \case
+        Preturn _              -> "return"
+        Pbind _                -> "bind"
+        Peffect _ _            -> "effect"
 
-    show (PgetState _)            = "getState"
-    show (PputState _ _)          = "putState"
-    show (PmodifyState _ _)       = "modifyState"
-    show (PgetPosition _)         = "getPosition"
-    show (PsetPosition _ _)       = "setPosition"
-    show (PgetInput _)            = "getInput"
-    show (PsetInput _ _)          = "setInput"
-    show (PgetParserState _)      = "getParserState"
-    show (PsetParserState _ _)    = "setParserState"
-    show (PupdateParserState _ _) = "updateParserState"
+        PgetState _            -> "getState"
+        PputState _ _          -> "putState"
+        PmodifyState _ _       -> "modifyState"
+        PgetPosition _         -> "getPosition"
+        PsetPosition _ _       -> "setPosition"
+        PgetInput _            -> "getInput"
+        PsetInput _ _          -> "setInput"
+        PgetParserState _      -> "getParserState"
+        PsetParserState _ _    -> "setParserState"
+        PupdateParserState _ _ -> "updateParserState"
 
-    show (Ptokens _ _ _ _)        = "tokens"
-    show (PtokenPrimEx _ _ _ _ _) = "tokenPrim"
+        Ptokens _ _ _ _        -> "tokens"
+        PtokenPrimEx _ _ _ _ _ -> "tokenPrim"
 
-    show (PalphaNum _)            = "alphaNum"
-    show (PanyChar _)             = "anyChar"
-    show (PanyToken _)            = "anyToken"
-    show (Pchar x _)              = "char " ++ show x
-    show (Pcrlf _)                = "crlf"
-    show (Pdigit _)               = "digit"
-    show (PendOfLine _)           = "endOfLine"
-    show (Peof _)                 = "eof"
-    show (PhexDigit _)            = "hexDigit"
-    show (Pletter _)              = "letter"
-    show (Plower _)               = "lower"
-    show (Pnewline _)             = "newline"
-    show (PnoneOf xs _)           = "noneOf " ++ show xs
-    show (PoctDigit _)            = "octDigit"
-    show (PoneOf xs _)            = "oneOf " ++ show xs
-    show (PparserFail s)          = "parserFail " ++ show s
-    show PparserZero              = "parserZero"
-    show (Psatisfy _ _)           = "satisfy"
-    show (Pspace _)               = "space"
-    show (Pspaces _)              = "spaces"
-    show (Pstring x _)            = "string " ++ show x
-    show (Ptab _)                 = "tab"
-    show (Pupper _)               = "upper"
-    show (Punexpected s)          = "unexpected " ++ show s
+        PalphaNum _            -> "alphaNum"
+        PanyChar _             -> "anyChar"
+        PanyToken _            -> "anyToken"
+        Pchar x _              -> "char " ++ show x
+        Pcrlf _                -> "crlf"
+        Pdigit _               -> "digit"
+        PendOfLine _           -> "endOfLine"
+        Peof _                 -> "eof"
+        PhexDigit _            -> "hexDigit"
+        Pletter _              -> "letter"
+        Plower _               -> "lower"
+        Pnewline _             -> "newline"
+        PnoneOf xs _           -> "noneOf " ++ show xs
+        PoctDigit _            -> "octDigit"
+        PoneOf xs _            -> "oneOf " ++ show xs
+        PparserFail s          -> "parserFail " ++ show s
+        PparserZero            -> "parserZero"
+        Psatisfy _ _           -> "satisfy"
+        Pspace _               -> "space"
+        Pspaces _              -> "spaces"
+        Pstring x _            -> "string " ++ show x
+        Ptab _                 -> "tab"
+        Pupper _               -> "upper"
+        Punexpected s          -> "unexpected " ++ show s
 
-    show (PparserPlus _ _ _)      = "parserPlus"
-    show (Plabel _ a _)           = "label " ++ show a
-    show (Plabels _ a _)          = "labels " ++ show a
-    show (Ptry _ _)               = "try"
-    show (Pchainl _ _ _ _)        = "chainl"
-    show (Pchainl1 _ _ _)         = "chainl1"
-    show (Pchainr _ _ _ _)        = "chainr"
-    show (Pchainr1 _ _ _)         = "chainr1"
-    show (Pchoice _ _)            = "choice"
-    show (Pcount n _ _)           = "count " ++ show n
-    show (PlookAhead _ _)         = "lookAhead"
-    show (Pmany _ _)              = "many"
-    show (Pmany1 _ _)             = "many1"
-    show (PmanyAccum _ _ _)       = "manyAccum"
-    show (PnotFollowedBy _ _)     = "notFollowedBy"
-    show (Poption _ _ _)          = "option"
-    show (PoptionMaybe _ _)       = "optionMaybe"
-    show (Poptional _ _)          = "optional"
-    show (PskipMany _ _)          = "skipMany"
-    show (PskipMany1 _ _)         = "skipMany1"
-    show (PmanyTill _ _ _)        = "manyTill"
-    show (Pbetween _ _ _ _)       = "between"
-    show (PendBy _ _ _)           = "endBy"
-    show (PendBy1 _ _ _)          = "endBy1"
-    show (PsepBy _ _ _)           = "sepBy"
-    show (PsepBy1 _ _ _)          = "sepBy1"
-    show (PsepEndBy _ _ _)        = "sepEndBy"
-    show (PsepEndBy1 _ _ _)       = "sepEndBy1"
+        PparserPlus _ _ _      -> "parserPlus"
+        Plabel _ a _           -> "label " ++ show a
+        Plabels _ a _          -> "labels " ++ show a
+        Ptry _ _               -> "try"
+        Pchainl _ _ _ _        -> "chainl"
+        Pchainl1 _ _ _         -> "chainl1"
+        Pchainr _ _ _ _        -> "chainr"
+        Pchainr1 _ _ _         -> "chainr1"
+        Pchoice _ _            -> "choice"
+        Pcount n _ _           -> "count " ++ show n
+        PlookAhead _ _         -> "lookAhead"
+        Pmany _ _              -> "many"
+        Pmany1 _ _             -> "many1"
+        PmanyAccum _ _ _       -> "manyAccum"
+        PnotFollowedBy _ _     -> "notFollowedBy"
+        Poption _ _ _          -> "option"
+        PoptionMaybe _ _       -> "optionMaybe"
+        Poptional _ _          -> "optional"
+        PskipMany _ _          -> "skipMany"
+        PskipMany1 _ _         -> "skipMany1"
+        PmanyTill _ _ _        -> "manyTill"
+        Pbetween _ _ _ _       -> "between"
+        PendBy _ _ _           -> "endBy"
+        PendBy1 _ _ _          -> "endBy1"
+        PsepBy _ _ _           -> "sepBy"
+        PsepBy1 _ _ _          -> "sepBy1"
+        PsepEndBy _ _ _        -> "sepEndBy"
+        PsepEndBy1 _ _ _       -> "sepEndBy1"
 
-    show (Pidentifier _ _)        = "identifier"
-    show (Preserved _ s _)        = "reserved " ++ show s
-    show (Poperator _ _)          = "operator"
-    show (PreservedOp _ s _)      = "reservedOp " ++ show s
-    show (PcharLiteral _ _)       = "charLiteral"
-    show (PstringLiteral _ _)     = "stringLiteral"
-    show (Pnatural _ _)           = "natural"
-    show (Pinteger _ _)           = "integer"
-    show (Pfloat _ _)             = "float"
-    show (PnaturalOrFloat _ _)    = "naturalOrFloat"
-    show (Pdecimal _ _)           = "decimal"
-    show (Phexadecimal _ _)       = "hexadecimal"
-    show (Poctal _ _)             = "octal"
-    show (Psymbol _ s _)          = "symbol " ++ show s
-    show (Plexeme _ _)            = "lexeme"
-    show (PwhiteSpace _ _)        = "whiteSpace"
-    show (Pparens _ _)            = "parens"
-    show (Pbraces _ _)            = "braces"
-    show (Pangles _ _)            = "angles"
-    show (Pbrackets _ _)          = "brackets"
-    show (Psquares _ _)           = "squares"
-    show (Psemi _ _)              = "semi"
-    show (Pcomma _ _)             = "comma"
-    show (Pcolon _ _)             = "colon"
-    show (Pdot _ _)               = "dot"
-    show (PsemiSep _ _)           = "semiSep"
-    show (PsemiSep1 _ _)          = "semiSep1"
-    show (PcommaSep _ _)          = "commaSep"
-    show (PcommaSep1 _ _)         = "commaSep1"
+        Pidentifier _ _        -> "identifier"
+        Preserved _ s _        -> "reserved " ++ show s
+        Poperator _ _          -> "operator"
+        PreservedOp _ s _      -> "reservedOp " ++ show s
+        PcharLiteral _ _       -> "charLiteral"
+        PstringLiteral _ _     -> "stringLiteral"
+        Pnatural _ _           -> "natural"
+        Pinteger _ _           -> "integer"
+        Pfloat _ _             -> "float"
+        PnaturalOrFloat _ _    -> "naturalOrFloat"
+        Pdecimal _ _           -> "decimal"
+        Phexadecimal _ _       -> "hexadecimal"
+        Poctal _ _             -> "octal"
+        Psymbol _ s _          -> "symbol " ++ show s
+        Plexeme _ _            -> "lexeme"
+        PwhiteSpace _ _        -> "whiteSpace"
+        Pparens _ _            -> "parens"
+        Pbraces _ _            -> "braces"
+        Pangles _ _            -> "angles"
+        Pbrackets _ _          -> "brackets"
+        Psquares _ _           -> "squares"
+        Psemi _ _              -> "semi"
+        Pcomma _ _             -> "comma"
+        Pcolon _ _             -> "colon"
+        Pdot _ _               -> "dot"
+        PsemiSep _ _           -> "semiSep"
+        PsemiSep1 _ _          -> "semiSep1"
+        PcommaSep _ _          -> "commaSep"
+        PcommaSep1 _ _         -> "commaSep1"
 
 liftF' :: ParsecF s u m a -> ParsecDSL s u m a
 liftF' x = ParsecDSL $ Free (fmap pure x)
-
-lifted :: P.ParsecT s u m a -> ParsecDSL s u m a
-lifted p = liftF' $ Plifted p id
 
 getState :: ParsecDSL s u m u
 getState = liftF' $ PgetState id
