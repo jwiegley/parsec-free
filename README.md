@@ -45,8 +45,8 @@ parserPlus
 ...
 ```
 
-In this output, terms in parentheses represent failed attempts at parser on
-that branch. If a term ends with `...`, it means the parse was not completed
+In this output, terms in parentheses represent a failed attempt to parse along
+that branch. If a term ends with `...`, it means the parser did not complete
 before an exception occurred.
 
 Also, `parserPlus` is the name for `<|>`, while `label` is `<?>`.
