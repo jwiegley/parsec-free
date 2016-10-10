@@ -7,7 +7,8 @@ module Text.Parsec.Prim
     ( P.unknownError
     , P.sysUnExpectError
     , unexpected
-    , ParsecT(..)
+    , ParsecT
+    , runParsecT
     , P.mkPT
     , Parsec
     , P.Consumed(..)
@@ -77,13 +78,13 @@ import qualified Text.Parsec.Free.Log as F
 import qualified "parsec" Text.Parsec.Prim as P
 import "parsec" Text.Parsec.Prim (Stream, State(..))
 
-newtype ParsecT s u m a = ParsecT { runParsecT :: F.ParsecDSL s u m a }
-    deriving (Functor, Applicative, Applicative.Alternative, Monad,
-              MonadPlus, MonadReader r, MonadState s, MonadCont,
-              MonadError e, MonadTrans)
+type ParsecT = F.ParsecDSL
+
+runParsecT :: ParsecT s u m a -> F.ParsecDSL s u m a
+runParsecT = id
 
 unexpected :: (Stream s m t) => String -> ParsecT s u m a
-unexpected msg = ParsecT $ F.unexpected msg
+unexpected = F.unexpected
 
 type Parsec s u = ParsecT s u Identity
 
@@ -97,19 +98,19 @@ parserBind :: ParsecT s u m a -> (a -> ParsecT s u m b) -> ParsecT s u m b
 parserBind = (>>=)
 
 parserFail :: String -> ParsecT s u m a
-parserFail str = ParsecT $ F.parserFail str
+parserFail = F.parserFail
 
 parserZero :: ParsecT s u m a
-parserZero = ParsecT F.parserZero
+parserZero = F.parserZero
 
 parserPlus :: ParsecT s u m a -> ParsecT s u m a -> ParsecT s u m a
-parserPlus (ParsecT p) (ParsecT q) = ParsecT $ F.parserPlus p q
+parserPlus = F.parserPlus
 
 infix  0 <?>
 infixr 1 <|>
 
 (<?>) :: (ParsecT s u m a) -> String -> (ParsecT s u m a)
-ParsecT p <?> str = ParsecT $ F.label p str
+(<?>) = F.label
 
 (<|>) :: (ParsecT s u m a) -> (ParsecT s u m a) -> (ParsecT s u m a)
 (<|>) = parserPlus
@@ -119,20 +120,20 @@ label :: ParsecT s u m a -> String -> ParsecT s u m a
 label = (<?>)
 
 labels :: ParsecT s u m a -> [String] -> ParsecT s u m a
-labels (ParsecT p) xs = ParsecT $ F.labels p xs
+labels = F.labels
 
 tokens :: (Monad m, Stream s m t, Eq t)
        => ([t] -> String)      -- Pretty print a list of tokens
        -> (SourcePos -> [t] -> SourcePos)
        -> [t]                  -- List of tokens to parse
        -> ParsecT s u m [t]
-tokens showTokens nextposs tts = ParsecT $ F.tokens showTokens nextposs tts
+tokens = F.tokens
 
 try :: ParsecT s u m a -> ParsecT s u m a
-try (ParsecT p) = ParsecT $ F.try p
+try = F.try
 
 lookAhead :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m a
-lookAhead (ParsecT p) = ParsecT $ F.lookAhead p
+lookAhead = F.lookAhead
 
 token :: (Stream s Identity t)
       => (t -> String)            -- ^ Token pretty-printing function.
@@ -158,32 +159,31 @@ tokenPrimEx :: (Stream s m t)
             -> Maybe (SourcePos -> t -> s -> u -> u)
             -> (t -> Maybe a)
             -> ParsecT s u m a
-tokenPrimEx showToken nextpos f test =
-    ParsecT $ F.tokenPrimEx showToken nextpos f test
+tokenPrimEx = F.tokenPrimEx
 
 many :: ParsecT s u m a -> ParsecT s u m [a]
-many (ParsecT p) = ParsecT $ F.many p
+many = F.many
 
 skipMany :: ParsecT s u m a -> ParsecT s u m ()
-skipMany (ParsecT p) = ParsecT $ F.skipMany p
+skipMany = F.skipMany
 
 manyAccum :: (a -> [a] -> [a])
           -> ParsecT s u m a
           -> ParsecT s u m [a]
-manyAccum acc (ParsecT p) = ParsecT $ F.manyAccum acc p
+manyAccum = F.manyAccum
 
 runPT :: (Monad m, Stream s m t)
       => ParsecT s u m a -> u -> SourceName -> s -> m (Either ParseError a)
-runPT = P.runPT . F.eval (const id) id . runParsecT
+runPT = P.runPT . F.eval (const id) id
 
 runPTLog :: (MonadIO m, MonadReader F.LogType m, Stream s m t)
          => ParsecT s u m a -> u -> SourceName -> s
          -> m (Either ParseError a)
-runPTLog (ParsecT p) = P.runPT (F.evalLog p)
+runPTLog = P.runPT . F.evalLog
 
 runP :: (Stream s Identity t)
      => Parsec s u a -> u -> SourceName -> s -> Either ParseError a
-runP (ParsecT p) u n s = runIdentity $ P.runPT (F.eval (const id) id p) u n s
+runP p u n s = runIdentity $ P.runPT (F.eval (const id) id p) u n s
 
 runParserT :: (Stream s m t)
            => ParsecT s u m a -> u -> SourceName -> s -> m (Either ParseError a)
@@ -225,29 +225,29 @@ parseTestLog p input = do
 -- | Returns the full parser state as a 'State' record.
 
 getParserState :: Monad m => ParsecT s u m (State s u)
-getParserState = ParsecT F.getParserState
+getParserState = F.getParserState
 
 -- | @setParserState st@ set the full parser state to @st@.
 
 setParserState :: Monad m => State s u -> ParsecT s u m (State s u)
-setParserState s = ParsecT $ F.setParserState s
+setParserState = F.setParserState
 
 -- | @updateParserState f@ applies function @f@ to the parser state.
 
 updateParserState :: Monad m => (State s u -> State s u) -> ParsecT s u m (State s u)
-updateParserState f = ParsecT $ F.updateParserState f
+updateParserState = F.updateParserState
 
 -- < User state combinators
 
 -- | Returns the current user state.
 
 getState :: (Monad m) => ParsecT s u m u
-getState = ParsecT F.getState
+getState = F.getState
 
 -- | @putState st@ set the user state to @st@.
 
 putState :: (Monad m) => u -> ParsecT s u m ()
-putState u = ParsecT $ F.putState u
+putState = F.putState
 
 -- | @modifyState f@ applies function @f@ to the user state. Suppose
 -- that we want to count identifiers in a source, we could use the user
@@ -259,7 +259,7 @@ putState u = ParsecT $ F.putState u
 -- >            }
 
 modifyState :: (Monad m) => (u -> u) -> ParsecT s u m ()
-modifyState f = ParsecT $ F.modifyState f
+modifyState = F.modifyState
 
 -- XXX Compat
 

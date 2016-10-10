@@ -31,13 +31,14 @@ module Text.Parsec.Combinator
 
 import Control.Monad
 import Text.Parsec.Prim
+import qualified Text.Parsec.Free as F
 
 -- | @choice ps@ tries to apply the parsers in the list @ps@ in order,
 -- until one of them succeeds. Returns the value of the succeeding
 -- parser.
 
 choice :: (Stream s m t) => [ParsecT s u m a] -> ParsecT s u m a
-choice ps           = foldr (<|>) mzero ps
+choice = F.choice
 
 -- | @option x p@ tries to apply parser @p@. If @p@ fails without
 -- consuming input, it returns the value @x@, otherwise the value
@@ -48,21 +49,21 @@ choice ps           = foldr (<|>) mzero ps
 -- >                          })
 
 option :: (Stream s m t) => a -> ParsecT s u m a -> ParsecT s u m a
-option x p          = p <|> return x
+option = F.option
 
 -- | @optionMaybe p@ tries to apply parser @p@.  If @p@ fails without
 -- consuming input, it return 'Nothing', otherwise it returns
 -- 'Just' the value returned by @p@.
 
 optionMaybe :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m (Maybe a)
-optionMaybe p       = option Nothing (liftM Just p)
+optionMaybe = F.optionMaybe
 
 -- | @optional p@ tries to apply parser @p@.  It will parse @p@ or nothing.
 -- It only fails if @p@ fails after consuming input. It discards the result
 -- of @p@.
 
 optional :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m ()
-optional p          = do{ p; return ()} <|> return ()
+optional = F.optional
 
 -- | @between open close p@ parses @open@, followed by @p@ and @close@.
 -- Returns the value returned by @p@.
@@ -71,14 +72,13 @@ optional p          = do{ p; return ()} <|> return ()
 
 between :: (Stream s m t) => ParsecT s u m open -> ParsecT s u m close
             -> ParsecT s u m a -> ParsecT s u m a
-between open close p
-                    = do{ open; x <- p; close; return x }
+between = F.between
 
 -- | @skipMany1 p@ applies the parser @p@ /one/ or more times, skipping
 -- its result. 
 
 skipMany1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m ()
-skipMany1 p         = do{ p; skipMany p }
+skipMany1 = F.skipMany1
 {-
 skipMany p          = scan
                     where
@@ -91,7 +91,7 @@ skipMany p          = scan
 -- >  word  = many1 letter
 
 many1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m [a]
-many1 p             = do{ x <- p; xs <- many p; return (x:xs) }
+many1 = F.many1
 {-
 many p              = scan id
                     where
@@ -108,30 +108,20 @@ many p              = scan id
 -- >  commaSep p  = p `sepBy` (symbol ",")
 
 sepBy :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m sep -> ParsecT s u m [a]
-sepBy p sep         = sepBy1 p sep <|> return []
+sepBy = F.sepBy
 
 -- | @sepBy1 p sep@ parses /one/ or more occurrences of @p@, separated
 -- by @sep@. Returns a list of values returned by @p@. 
 
 sepBy1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m sep -> ParsecT s u m [a]
-sepBy1 p sep        = do{ x <- p
-                        ; xs <- many (sep >> p)
-                        ; return (x:xs)
-                        }
-
+sepBy1 = F.sepBy1
 
 -- | @sepEndBy1 p sep@ parses /one/ or more occurrences of @p@,
 -- separated and optionally ended by @sep@. Returns a list of values
 -- returned by @p@. 
 
 sepEndBy1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m sep -> ParsecT s u m [a]
-sepEndBy1 p sep     = do{ x <- p
-                        ; do{ sep
-                            ; xs <- sepEndBy p sep
-                            ; return (x:xs)
-                            }
-                          <|> return [x]
-                        }
+sepEndBy1 = F.sepEndBy1
 
 -- | @sepEndBy p sep@ parses /zero/ or more occurrences of @p@,
 -- separated and optionally ended by @sep@, ie. haskell style
@@ -140,14 +130,14 @@ sepEndBy1 p sep     = do{ x <- p
 -- >  haskellStatements  = haskellStatement `sepEndBy` semi
 
 sepEndBy :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m sep -> ParsecT s u m [a]
-sepEndBy p sep      = sepEndBy1 p sep <|> return []
+sepEndBy = F.sepEndBy
 
 
 -- | @endBy1 p sep@ parses /one/ or more occurrences of @p@, separated
 -- and ended by @sep@. Returns a list of values returned by @p@. 
 
 endBy1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m sep -> ParsecT s u m [a]
-endBy1 p sep        = many1 (do{ x <- p; sep; return x })
+endBy1 = F.endBy1
 
 -- | @endBy p sep@ parses /zero/ or more occurrences of @p@, separated
 -- and ended by @sep@. Returns a list of values returned by @p@.
@@ -155,15 +145,14 @@ endBy1 p sep        = many1 (do{ x <- p; sep; return x })
 -- >   cStatements  = cStatement `endBy` semi
 
 endBy :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m sep -> ParsecT s u m [a]
-endBy p sep         = many (do{ x <- p; sep; return x })
+endBy = F.endBy
 
 -- | @count n p@ parses @n@ occurrences of @p@. If @n@ is smaller or
 -- equal to zero, the parser equals to @return []@. Returns a list of
 -- @n@ values returned by @p@. 
 
 count :: (Stream s m t) => Int -> ParsecT s u m a -> ParsecT s u m [a]
-count n p           | n <= 0    = return []
-                    | otherwise = sequence (replicate n p)
+count = F.count
 
 -- | @chainr p op x@ parses /zero/ or more occurrences of @p@,
 -- separated by @op@ Returns a value obtained by a /right/ associative
@@ -172,7 +161,7 @@ count n p           | n <= 0    = return []
 -- returned.
 
 chainr :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m (a -> a -> a) -> a -> ParsecT s u m a
-chainr p op x       = chainr1 p op <|> return x
+chainr = F.chainr
 
 -- | @chainl p op x@ parses /zero/ or more occurrences of @p@,
 -- separated by @op@. Returns a value obtained by a /left/ associative
@@ -181,7 +170,7 @@ chainr p op x       = chainr1 p op <|> return x
 -- returned.
 
 chainl :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m (a -> a -> a) -> a -> ParsecT s u m a
-chainl p op x       = chainl1 p op <|> return x
+chainl = F.chainl
 
 -- | @chainl1 p op x@ parses /one/ or more occurrences of @p@,
 -- separated by @op@ Returns a value obtained by a /left/ associative
@@ -200,13 +189,7 @@ chainl p op x       = chainl1 p op <|> return x
 -- >          <|> do{ symbol "-"; return (-) }
 
 chainl1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m (a -> a -> a) -> ParsecT s u m a
-chainl1 p op        = do{ x <- p; rest x }
-                    where
-                      rest x    = do{ f <- op
-                                    ; y <- p
-                                    ; rest (f x y)
-                                    }
-                                <|> return x
+chainl1 = F.chainl1
 
 -- | @chainr1 p op x@ parses /one/ or more occurrences of |p|,
 -- separated by @op@ Returns a value obtained by a /right/ associative
@@ -214,15 +197,7 @@ chainl1 p op        = do{ x <- p; rest x }
 -- by @p@.
 
 chainr1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m (a -> a -> a) -> ParsecT s u m a
-chainr1 p op        = scan
-                    where
-                      scan      = do{ x <- p; rest x }
-
-                      rest x    = do{ f <- op
-                                    ; y <- scan
-                                    ; return (f x y)
-                                    }
-                                <|> return x
+chainr1 = F.chainr1
 
 -----------------------------------------------------------
 -- Tricky combinators
@@ -231,7 +206,7 @@ chainr1 p op        = scan
 -- used to implement 'eof'. Returns the accepted token. 
 
 anyToken :: (Stream s m t, Show t) => ParsecT s u m t
-anyToken            = tokenPrim show (\pos _tok _toks -> pos) Just
+anyToken = F.anyToken
 
 -- | This parser only succeeds at the end of the input. This is not a
 -- primitive parser but it is defined using 'notFollowedBy'.
@@ -239,7 +214,7 @@ anyToken            = tokenPrim show (\pos _tok _toks -> pos) Just
 -- >  eof  = notFollowedBy anyToken <?> "end of input"
 
 eof :: (Stream s m t, Show t) => ParsecT s u m ()
-eof                 = notFollowedBy anyToken <?> "end of input"
+eof = F.eof
 
 -- | @notFollowedBy p@ only succeeds when parser @p@ fails. This parser
 -- does not consume any input. This parser can be used to implement the
@@ -254,9 +229,7 @@ eof                 = notFollowedBy anyToken <?> "end of input"
 -- >                       })
 
 notFollowedBy :: (Stream s m t, Show a) => ParsecT s u m a -> ParsecT s u m ()
-notFollowedBy p     = try (do{ c <- try p; unexpected (show c) }
-                           <|> return ()
-                          )
+notFollowedBy = F.notFollowedBy
 
 -- | @manyTill p end@ applies parser @p@ /zero/ or more times until
 -- parser @end@ succeeds. Returns the list of values returned by @p@.
@@ -270,8 +243,4 @@ notFollowedBy p     = try (do{ c <- try p; unexpected (show c) }
 --    therefore the use of the 'try' combinator.
 
 manyTill :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m end -> ParsecT s u m [a]
-manyTill p end      = scan
-                    where
-                      scan  = do{ end; return [] }
-                            <|>
-                              do{ x <- p; xs <- scan; return (x:xs) }
+manyTill = F.manyTill
