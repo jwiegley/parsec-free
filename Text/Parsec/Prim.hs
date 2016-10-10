@@ -7,8 +7,7 @@ module Text.Parsec.Prim
     ( P.unknownError
     , P.sysUnExpectError
     , unexpected
-    , ParsecT
-    , runParsecT
+    , ParsecT(..)
     , P.mkPT
     , Parsec
     , P.Consumed(..)

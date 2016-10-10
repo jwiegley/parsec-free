@@ -12,11 +12,11 @@ import                    Control.Applicative hiding (many)
 import                    Control.Monad
 import                    Control.Monad.Cont.Class
 import                    Control.Monad.Error.Class
+import                    Control.Monad.Free
 import                    Control.Monad.IO.Class
 import                    Control.Monad.Reader.Class
 import                    Control.Monad.State.Class
 import                    Control.Monad.Trans.Class
-import                    Control.Monad.Free
 import qualified "parsec" Text.Parsec.Pos as P
 import qualified "parsec" Text.Parsec.Prim as P
 
@@ -135,37 +135,36 @@ data ParsecF s u m r
     | forall sep a. PsepEndBy (ParsecDSL s u m a) (ParsecDSL s u m sep) ([a] -> r)
     | forall sep a. PsepEndBy1 (ParsecDSL s u m a) (ParsecDSL s u m sep) ([a] -> r)
 
-{-
-    | Pidentifier (String -> r)
-    | Preserved String r
-    | Poperator (String -> r)
-    | PreservedOp String r
-    | PcharLiteral (Char -> r)
-    | PstringLiteral (String -> r)
-    | Pnatural (Integer -> r)
-    | Pinteger (Integer -> r)
-    | Pfloat (Double -> r)
-    | PnaturalOrFloat (Either Integer Double -> r)
-    | Pdecimal (Integer -> r)
-    | Phexadecimal (Integer -> r)
-    | Poctal (Integer -> r)
-    | Psymbol String (String -> r)
+    | Pidentifier (ParsecDSL s u m String) (String -> r)
+    | Preserved (ParsecDSL s u m ()) String r
+    | Poperator (ParsecDSL s u m String) (String -> r)
+    | PreservedOp (ParsecDSL s u m ()) String r
+    | PcharLiteral (ParsecDSL s u m Char) (Char -> r)
+    | PstringLiteral (ParsecDSL s u m String) (String -> r)
+    | Pnatural (ParsecDSL s u m Integer) (Integer -> r)
+    | Pinteger (ParsecDSL s u m Integer) (Integer -> r)
+    | Pfloat (ParsecDSL s u m Double) (Double -> r)
+    | PnaturalOrFloat (ParsecDSL s u m (Either Integer Double))
+                      (Either Integer Double -> r)
+    | Pdecimal (ParsecDSL s u m Integer) (Integer -> r)
+    | Phexadecimal (ParsecDSL s u m Integer) (Integer -> r)
+    | Poctal (ParsecDSL s u m Integer) (Integer -> r)
+    | Psymbol (ParsecDSL s u m String) String (String -> r)
     | forall a. Plexeme (ParsecDSL s u m a) (a -> r)
-    | PwhiteSpace r
+    | PwhiteSpace (ParsecDSL s u m ()) r
     | forall a. Pparens (ParsecDSL s u m a) (a -> r)
     | forall a. Pbraces (ParsecDSL s u m a) (a -> r)
     | forall a. Pangles (ParsecDSL s u m a) (a -> r)
     | forall a. Pbrackets (ParsecDSL s u m a) (a -> r)
     | forall a. Psquares (ParsecDSL s u m a) (a -> r)
-    | Psemi (String -> r)
-    | Pcomma (String -> r)
-    | Pcolon (String -> r)
-    | Pdot (String -> r)
-    | forall a. PsemiSep (ParsecDSL s u m a) ([a] -> r)
-    | forall a. PsemiSep1 (ParsecDSL s u m a) ([a] -> r)
-    | forall a. PcommaSep (ParsecDSL s u m a) ([a] -> r)
-    | forall a. PcommaSep1 (ParsecDSL s u m a) ([a] -> r)
--}
+    | Psemi (ParsecDSL s u m String) (String -> r)
+    | Pcomma (ParsecDSL s u m String) (String -> r)
+    | Pcolon (ParsecDSL s u m String) (String -> r)
+    | Pdot (ParsecDSL s u m String) (String -> r)
+    | forall a. PsemiSep (ParsecDSL s u m [a]) ([a] -> r)
+    | forall a. PsemiSep1 (ParsecDSL s u m [a]) ([a] -> r)
+    | forall a. PcommaSep (ParsecDSL s u m [a]) ([a] -> r)
+    | forall a. PcommaSep1 (ParsecDSL s u m [a]) ([a] -> r)
 
 instance Functor (ParsecF s u m) where
     fmap f (Plifted p k)            = Plifted p (f . k)
@@ -239,37 +238,35 @@ instance Functor (ParsecF s u m) where
     fmap f (PsepEndBy p s k)        = PsepEndBy p s (f . k)
     fmap f (PsepEndBy1 p s k)       = PsepEndBy1 p s (f . k)
 
-{-
-    fmap f (Pidentifier k)          = Pidentifier (f . k)
-    fmap f (Preserved s r)          = Preserved s (f r)
-    fmap f (Poperator k)            = Poperator (f . k)
-    fmap f (PreservedOp s r)        = PreservedOp s (f r)
-    fmap f (PcharLiteral k)         = PcharLiteral (f . k)
-    fmap f (PstringLiteral k)       = PstringLiteral (f . k)
-    fmap f (Pnatural k)             = Pnatural (f . k)
-    fmap f (Pinteger k)             = Pinteger (f . k)
-    fmap f (Pfloat k)               = Pfloat (f . k)
-    fmap f (PnaturalOrFloat k)      = PnaturalOrFloat (f . k)
-    fmap f (Pdecimal k)             = Pdecimal (f . k)
-    fmap f (Phexadecimal k)         = Phexadecimal (f . k)
-    fmap f (Poctal k)               = Poctal (f . k)
-    fmap f (Psymbol s k)            = Psymbol s (f . k)
+    fmap f (Pidentifier t k)        = Pidentifier t (f . k)
+    fmap f (Preserved t s r)        = Preserved t s (f r)
+    fmap f (Poperator t k)          = Poperator t (f . k)
+    fmap f (PreservedOp t s r)      = PreservedOp t s (f r)
+    fmap f (PcharLiteral t k)       = PcharLiteral t (f . k)
+    fmap f (PstringLiteral t k)     = PstringLiteral t (f . k)
+    fmap f (Pnatural t k)           = Pnatural t (f . k)
+    fmap f (Pinteger t k)           = Pinteger t (f . k)
+    fmap f (Pfloat t k)             = Pfloat t (f . k)
+    fmap f (PnaturalOrFloat t k)    = PnaturalOrFloat t (f . k)
+    fmap f (Pdecimal t k)           = Pdecimal t (f . k)
+    fmap f (Phexadecimal t k)       = Phexadecimal t (f . k)
+    fmap f (Poctal t k)             = Poctal t (f . k)
+    fmap f (Psymbol t s k)          = Psymbol t s (f . k)
     fmap f (Plexeme p k)            = Plexeme p (f . k)
-    fmap f (PwhiteSpace r)          = PwhiteSpace (f r)
+    fmap f (PwhiteSpace t r)        = PwhiteSpace t (f r)
     fmap f (Pparens p k)            = Pparens p (f . k)
     fmap f (Pbraces p k)            = Pbraces p (f . k)
     fmap f (Pangles p k)            = Pangles p (f . k)
     fmap f (Pbrackets p k)          = Pbrackets p (f . k)
     fmap f (Psquares p k)           = Psquares p (f . k)
-    fmap f (Psemi k)                = Psemi (f . k)
-    fmap f (Pcomma k)               = Pcomma (f . k)
-    fmap f (Pcolon k)               = Pcolon (f . k)
-    fmap f (Pdot k)                 = Pdot (f . k)
+    fmap f (Psemi t k)              = Psemi t (f . k)
+    fmap f (Pcomma t k)             = Pcomma t (f . k)
+    fmap f (Pcolon t k)             = Pcolon t (f . k)
+    fmap f (Pdot t k)               = Pdot t (f . k)
     fmap f (PsemiSep p k)           = PsemiSep p (f . k)
     fmap f (PsemiSep1 p k)          = PsemiSep1 p (f . k)
     fmap f (PcommaSep p k)          = PcommaSep p (f . k)
     fmap f (PcommaSep1 p k)         = PcommaSep1 p (f . k)
--}
 
 instance Show (ParsecF s u m r) where
     show (Plifted _ _)            = "lifted"
@@ -343,37 +340,35 @@ instance Show (ParsecF s u m r) where
     show (PsepEndBy _ _ _)        = "sepEndBy"
     show (PsepEndBy1 _ _ _)       = "sepEndBy1"
 
-{-
-    show (Pidentifier _)          = "identifier"
-    show (Preserved _ _)          = "reserved"
-    show (Poperator _)            = "operator"
-    show (PreservedOp _ _)        = "reservedOp"
-    show (PcharLiteral _)         = "charLiteral"
-    show (PstringLiteral _)       = "stringLiteral"
-    show (Pnatural _)             = "natural"
-    show (Pinteger _)             = "integer"
-    show (Pfloat _)               = "float"
-    show (PnaturalOrFloat _)      = "naturalOrFloat"
-    show (Pdecimal _)             = "decimal"
-    show (Phexadecimal _)         = "hexadecimal"
-    show (Poctal _)               = "octal"
-    show (Psymbol _ _)            = "symbol"
+    show (Pidentifier _ _)        = "identifier"
+    show (Preserved _ s _)        = "reserved " ++ show s
+    show (Poperator _ _)          = "operator"
+    show (PreservedOp _ s _)      = "reservedOp " ++ show s
+    show (PcharLiteral _ _)       = "charLiteral"
+    show (PstringLiteral _ _)     = "stringLiteral"
+    show (Pnatural _ _)           = "natural"
+    show (Pinteger _ _)           = "integer"
+    show (Pfloat _ _)             = "float"
+    show (PnaturalOrFloat _ _)    = "naturalOrFloat"
+    show (Pdecimal _ _)           = "decimal"
+    show (Phexadecimal _ _)       = "hexadecimal"
+    show (Poctal _ _)             = "octal"
+    show (Psymbol _ s _)          = "symbol " ++ show s
     show (Plexeme _ _)            = "lexeme"
-    show (PwhiteSpace _)          = "whiteSpace"
+    show (PwhiteSpace _ _)        = "whiteSpace"
     show (Pparens _ _)            = "parens"
     show (Pbraces _ _)            = "braces"
     show (Pangles _ _)            = "angles"
     show (Pbrackets _ _)          = "brackets"
     show (Psquares _ _)           = "squares"
-    show (Psemi _)                = "semi"
-    show (Pcomma _)               = "comma"
-    show (Pcolon _)               = "colon"
-    show (Pdot _)                 = "dot"
+    show (Psemi _ _)              = "semi"
+    show (Pcomma _ _)             = "comma"
+    show (Pcolon _ _)             = "colon"
+    show (Pdot _ _)               = "dot"
     show (PsemiSep _ _)           = "semiSep"
     show (PsemiSep1 _ _)          = "semiSep1"
     show (PcommaSep _ _)          = "commaSep"
     show (PcommaSep1 _ _)         = "commaSep1"
--}
 
 liftF' :: ParsecF s u m a -> ParsecDSL s u m a
 liftF' x = ParsecDSL $ Free (fmap pure x)
@@ -583,92 +578,3 @@ sepEndBy p s = liftF' $ PsepEndBy p s id
 
 sepEndBy1 :: ParsecDSL s u m a -> ParsecDSL s u m sep -> ParsecDSL s u m [a]
 sepEndBy1 p s = liftF' $ PsepEndBy1 p s id
-
-{-
-identifier' :: ParsecDSL s u m String
-identifier' = liftF' $ Pidentifier id
-
-reserved' :: String -> ParsecDSL s u m ()
-reserved' s = liftF' $ Preserved s ()
-
-operator' :: ParsecDSL s u m String
-operator' = liftF' $ Poperator id
-
-reservedOp' :: String -> ParsecDSL s u m ()
-reservedOp' s = liftF' $ PreservedOp s ()
-
-charLiteral' :: ParsecDSL s u m Char
-charLiteral' = liftF' $ PcharLiteral id
-
-stringLiteral' :: ParsecDSL s u m String
-stringLiteral' = liftF' $ PstringLiteral id
-
-natural' :: ParsecDSL s u m Integer
-natural' = liftF' $ Pnatural id
-
-integer' :: ParsecDSL s u m Integer
-integer' = liftF' $ Pinteger id
-
-float' :: ParsecDSL s u m Double
-float' = liftF' $ Pfloat id
-
-naturalOrFloat' :: ParsecDSL s u m (Either Integer Double)
-naturalOrFloat' = liftF' $ PnaturalOrFloat id
-
-decimal' :: ParsecDSL s u m Integer
-decimal' = liftF' $ Pdecimal id
-
-hexadecimal' :: ParsecDSL s u m Integer
-hexadecimal' = liftF' $ Phexadecimal id
-
-octal' :: ParsecDSL s u m Integer
-octal' = liftF' $ Poctal id
-
-symbol' :: String -> ParsecDSL s u m String
-symbol' s = liftF' $ Psymbol s id
-
-lexeme' :: ParsecDSL s u m a -> ParsecDSL s u m a
-lexeme' p = liftF' $ Plexeme p id
-
-whiteSpace' :: ParsecDSL s u m ()
-whiteSpace' = liftF' $ PwhiteSpace ()
-
-parens' :: ParsecDSL s u m a -> ParsecDSL s u m a
-parens' p = liftF' $ Pparens p id
-
-braces' :: ParsecDSL s u m a -> ParsecDSL s u m a
-braces' p = liftF' $ Pbraces p id
-
-angles' :: ParsecDSL s u m a -> ParsecDSL s u m a
-angles' p = liftF' $ Pangles p id
-
-brackets' :: ParsecDSL s u m a -> ParsecDSL s u m a
-brackets' p = liftF' $ Pbrackets p id
-
-squares' :: ParsecDSL s u m a -> ParsecDSL s u m a
-squares' p = liftF' $ Psquares p id
-
-semi' :: ParsecDSL s u m String
-semi' = liftF' $ Psemi id
-
-comma' :: ParsecDSL s u m String
-comma' = liftF' $ Pcomma id
-
-colon' :: ParsecDSL s u m String
-colon' = liftF' $ Pcolon id
-
-dot' :: ParsecDSL s u m String
-dot' = liftF' $ Pdot id
-
-semiSep' :: ParsecDSL s u m a -> ParsecDSL s u m [a]
-semiSep' p = liftF' $ PsemiSep p id
-
-semiSep1' :: ParsecDSL s u m a -> ParsecDSL s u m [a]
-semiSep1' p = liftF' $ PsemiSep1 p id
-
-commaSep' :: ParsecDSL s u m a -> ParsecDSL s u m [a]
-commaSep' p = liftF' $ PcommaSep p id
-
-commaSep1' :: ParsecDSL s u m a -> ParsecDSL s u m [a]
-commaSep1' p = liftF' $ PcommaSep1 p id
--}

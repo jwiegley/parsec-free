@@ -31,6 +31,7 @@ import Control.Monad.Identity
 import Text.Parsec.Prim
 import Text.Parsec.Char
 import Text.Parsec.Combinator
+import qualified Text.Parsec.Free as F
 
 -----------------------------------------------------------
 -- Language Definition
@@ -350,40 +351,37 @@ data GenTokenParser s u m
 
 makeTokenParser :: (Stream s m Char)
                 => GenLanguageDef s u m -> GenTokenParser s u m
-makeTokenParser languageDef
-    = TokenParser{ identifier = identifier
-                 , reserved = reserved
-                 , operator = operator
-                 , reservedOp = reservedOp
-
-                 , charLiteral = charLiteral
-                 , stringLiteral = stringLiteral
-                 , natural = natural
-                 , integer = integer
-                 , float = float
-                 , naturalOrFloat = naturalOrFloat
-                 , decimal = decimal
-                 , hexadecimal = hexadecimal
-                 , octal = octal
-
-                 , symbol = symbol
-                 , lexeme = lexeme
-                 , whiteSpace = whiteSpace
-
-                 , parens = parens
-                 , braces = braces
-                 , angles = angles
-                 , brackets = brackets
-                 , squares = brackets
-                 , semi = semi
-                 , comma = comma
-                 , colon = colon
-                 , dot = dot
-                 , semiSep = semiSep
-                 , semiSep1 = semiSep1
-                 , commaSep = commaSep
-                 , commaSep1 = commaSep1
-                 }
+makeTokenParser languageDef = TokenParser
+    { identifier     = ParsecT $ F.liftF' $ F.Pidentifier (runParsecT identifier) id
+    , reserved       = \s -> ParsecT $ F.liftF' $ F.Preserved (runParsecT (reserved s)) s ()
+    , operator       = ParsecT $ F.liftF' $ F.Poperator (runParsecT operator) id
+    , reservedOp     = \s -> ParsecT $ F.liftF' $ F.PreservedOp (runParsecT (reservedOp s)) s ()
+    , charLiteral    = ParsecT $ F.liftF' $ F.PcharLiteral (runParsecT charLiteral) id
+    , stringLiteral  = ParsecT $ F.liftF' $ F.PstringLiteral (runParsecT stringLiteral) id
+    , natural        = ParsecT $ F.liftF' $ F.Pnatural (runParsecT natural) id
+    , integer        = ParsecT $ F.liftF' $ F.Pinteger (runParsecT integer) id
+    , float          = ParsecT $ F.liftF' $ F.Pfloat (runParsecT float) id
+    , naturalOrFloat = ParsecT $ F.liftF' $ F.PnaturalOrFloat (runParsecT naturalOrFloat) id
+    , decimal        = ParsecT $ F.liftF' $ F.Pdecimal (runParsecT decimal) id
+    , hexadecimal    = ParsecT $ F.liftF' $ F.Phexadecimal (runParsecT hexadecimal) id
+    , octal          = ParsecT $ F.liftF' $ F.Poctal (runParsecT octal) id
+    , symbol         = \s -> ParsecT $ F.liftF' $ F.Psymbol (runParsecT (symbol s)) s id
+    , lexeme         = \p -> ParsecT $ F.liftF' $ F.Plexeme (runParsecT (lexeme p)) id
+    , whiteSpace     = ParsecT $ F.liftF' $ F.PwhiteSpace (runParsecT whiteSpace) ()
+    , parens         = \p -> ParsecT $ F.liftF' $ F.Pparens (runParsecT (parens p)) id
+    , braces         = \p -> ParsecT $ F.liftF' $ F.Pbraces (runParsecT (braces p)) id
+    , angles         = \p -> ParsecT $ F.liftF' $ F.Pangles (runParsecT (angles p)) id
+    , brackets       = \p -> ParsecT $ F.liftF' $ F.Pbrackets (runParsecT (brackets p)) id
+    , squares        = \p -> ParsecT $ F.liftF' $ F.Psquares (runParsecT (brackets p)) id
+    , semi           = ParsecT $ F.liftF' $ F.Psemi (runParsecT semi) id
+    , comma          = ParsecT $ F.liftF' $ F.Pcomma (runParsecT comma) id
+    , colon          = ParsecT $ F.liftF' $ F.Pcolon (runParsecT colon) id
+    , dot            = ParsecT $ F.liftF' $ F.Pdot (runParsecT dot) id
+    , semiSep        = \p -> ParsecT $ F.liftF' $ F.PsemiSep (runParsecT (semiSep p)) id
+    , semiSep1       = \p -> ParsecT $ F.liftF' $ F.PsemiSep1 (runParsecT (semiSep1 p)) id
+    , commaSep       = \p -> ParsecT $ F.liftF' $ F.PcommaSep (runParsecT (commaSep p)) id
+    , commaSep1      = \p -> ParsecT $ F.liftF' $ F.PcommaSep1 (runParsecT (commaSep1 p)) id
+    }
     where
 
     -----------------------------------------------------------
