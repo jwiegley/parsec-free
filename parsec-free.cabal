@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                parsec-free
-version:             3.1.11.6
+version:             3.1.11.7
 synopsis:            Parsec API encoded as a deeply-embedded DSL, for debugging and analysis
 description:         Parsec API encoded as a deeply-embedded DSL, for debugging and analysis
 homepage:            https://github.com/jwiegley/parsec-free
@@ -47,6 +47,9 @@ library
     , free
     , lens
     , containers
+    , lifted-base
+    , monad-control
+    , transformers-base
     , transformers >=0.4 && <0.6
     , parsec >= 3.1.11
   default-language:    Haskell2010
