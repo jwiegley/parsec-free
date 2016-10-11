@@ -16,7 +16,7 @@ eval' :: forall s u m t a. P.Stream s m t
               -> P.ParsecT s u m b)
       -> (forall u' b c. Show b => Bool -> ParsecF s u' m c -> P.ParsecT s u m b
               -> P.ParsecT s u m b)
-      -> (forall b. P.ParsecT s u m b -> P.ParsecT s u m b)
+      -> (forall b. Bool -> P.ParsecT s u m b -> P.ParsecT s u m b)
       -> ParsecDSL s u m a -> P.ParsecT s u m a
 eval' h hS ind = go True
   where
@@ -75,34 +75,48 @@ eval' h hS ind = go True
             PparserZero            -> h b z P.parserZero
             Punexpected s          -> h b z (P.unexpected s)
 
-            PparserPlus p q k      -> h b z (ind (P.parserPlus (ind (go b p)) (go b q))) >>= k
-            Plabel p a k           -> h b z (ind (P.label (go b p) a))                   >>= k
-            Plabels p a k          -> h b z (ind (P.labels (go b p) a))                  >>= k
-            Ptry p k               -> h b z (ind (P.try (go b p)))                       >>= k
-            Pchainl p q a k        -> h b z (ind (P.chainl (go b p) (go b q) a))         >>= k
-            Pchainl1 p q k         -> h b z (ind (P.chainl1 (go b p) (go b q)))          >>= k
-            Pchainr p q a k        -> h b z (ind (P.chainr (go b p) (go b q) a))         >>= k
-            Pchainr1 p q k         -> h b z (ind (P.chainr1 (go b p) (go b q)))          >>= k
-            Pchoice xs k           -> h b z (ind (P.choice (map (go b) xs)))             >>= k
-            Pcount n p k           -> h b z (ind (P.count n (go b p)))                   >>= k
-            PlookAhead p k         -> h b z (ind (P.lookAhead (go b p)))                 >>= k
-            Pmany p k              -> h b z (ind (P.many (go b p)))                      >>= k
-            Pmany1 p k             -> h b z (ind (P.many1 (go b p)))                     >>= k
-            PmanyAccum acc p k     -> h b z (ind (P.manyAccum acc (go b p)))             >>= k
-            PnotFollowedBy p k     -> h b z (ind (P.notFollowedBy (go b p)))             >>  k
-            Poption a p k          -> h b z (ind (P.option a (go b p)))                  >>= k
-            PoptionMaybe p k       -> h b z (ind (P.optionMaybe (go b p)))               >>= k
-            Poptional p k          -> h b z (ind (P.optional (go b p)))                  >>  k
-            PskipMany p k          -> h b z (ind (P.skipMany (go b p)))                  >>  k
-            PskipMany1 p k         -> h b z (ind (P.skipMany1 (go b p)))                 >>  k
-            PmanyTill p e k        -> h b z (ind (P.manyTill (go b p) (go b e)))         >>= k
-            Pbetween o c p k       -> h b z (ind (P.between (go b o) (go b c) (go b p))) >>= k
-            PendBy p s k           -> h b z (ind (P.endBy (go b p) (go b s)))            >>= k
-            PendBy1 p s k          -> h b z (ind (P.endBy1 (go b p) (go b s)))           >>= k
-            PsepBy p s k           -> h b z (ind (P.sepBy (go b p) (go b s)))            >>= k
-            PsepBy1 p s k          -> h b z (ind (P.sepBy1 (go b p) (go b s)))           >>= k
-            PsepEndBy p s k        -> h b z (ind (P.sepEndBy (go b p) (go b s)))         >>= k
-            PsepEndBy1 p s k       -> h b z (ind (P.sepEndBy1 (go b p) (go b s)))        >>= k
+            PparserPlus p q k      -> h b z (P.parserPlus (ind True (go b p))
+                                                         (ind True (go b q)))     >>= k
+            Plabel p a k           -> h b z (ind False (P.label (go b p) a))       >>= k
+            Plabels p a k          -> h b z (ind False (P.labels (go b p) a))      >>= k
+            Ptry p k               -> h b z (ind False (P.try (go b p)))           >>= k
+            Pchainl p q a k        -> h b z (P.chainl (ind True (go b p))
+                                                     (ind True (go b q)) a)       >>= k
+            Pchainl1 p q k         -> h b z (P.chainl1 (ind True (go b p))
+                                                      (ind True (go b q)))        >>= k
+            Pchainr p q a k        -> h b z (P.chainr (ind True (go b p))
+                                                     (ind True (go b q)) a)       >>= k
+            Pchainr1 p q k         -> h b z (P.chainr1 (ind True (go b p))
+                                                      (ind True (go b q)))        >>= k
+            Pchoice xs k           -> h b z (P.choice (map (ind True . go b) xs))  >>= k
+            Pcount n p k           -> h b z (P.count n (ind True (go b p)))       >>= k
+            PlookAhead p k         -> h b z (ind False (P.lookAhead (go b p)))     >>= k
+            Pmany p k              -> h b z (P.many (ind True (go b p)))           >>= k
+            Pmany1 p k             -> h b z (P.many1 (ind True (go b p)))          >>= k
+            PmanyAccum acc p k     -> h b z (P.manyAccum acc (ind True (go b p)))  >>= k
+            PnotFollowedBy p k     -> h b z (ind False (P.notFollowedBy (go b p))) >>  k
+            Poption a p k          -> h b z (ind False (P.option a (go b p)))      >>= k
+            PoptionMaybe p k       -> h b z (ind False (P.optionMaybe (go b p)))   >>= k
+            Poptional p k          -> h b z (ind False (P.optional (go b p)))      >>  k
+            PskipMany p k          -> h b z (P.skipMany (ind True (go b p)))       >>  k
+            PskipMany1 p k         -> h b z (P.skipMany1 (ind True (go b p)))      >>  k
+            PmanyTill p e k        -> h b z (P.manyTill (ind True (go b p))
+                                                       (ind True (go b e)))       >>= k
+            Pbetween o c p k       -> h b z (P.between (ind True (go b o))
+                                                      (ind True (go b c))
+                                                      (ind True (go b p)))        >>= k
+            PendBy p s k           -> h b z (P.endBy (ind True (go b p))
+                                                    (ind True (go b s)))          >>= k
+            PendBy1 p s k          -> h b z (P.endBy1 (ind True (go b p))
+                                                     (ind True (go b s)))         >>= k
+            PsepBy p s k           -> h b z (P.sepBy (ind True (go b p))
+                                                    (ind True (go b s)))          >>= k
+            PsepBy1 p s k          -> h b z (P.sepBy1 (ind True (go b p))
+                                                     (ind True (go b s)))         >>= k
+            PsepEndBy p s k        -> h b z (P.sepEndBy (ind True (go b p))
+                                                       (ind True (go b s)))       >>= k
+            PsepEndBy1 p s k       -> h b z (P.sepEndBy1 (ind True (go b p))
+                                                        (ind True (go b s)))      >>= k
 
             Pidentifier d k        -> hS b z (go False d) >>= k
             Preserved d _ k        -> h  b z (go False d) >>  k
@@ -121,19 +135,19 @@ eval' h hS ind = go True
             Plexeme d k            -> h  b z (go False d) >>= k
             PwhiteSpace d k        -> hS b z (go False d) >>  k
 
-            Pparens p k            -> h b z (ind (go b p)) >>= k
-            Pbraces p k            -> h b z (ind (go b p)) >>= k
-            Pangles p k            -> h b z (ind (go b p)) >>= k
-            Pbrackets p k          -> h b z (ind (go b p)) >>= k
-            Psquares p k           -> h b z (ind (go b p)) >>= k
-            Psemi p k              -> h b z (ind (go b p)) >>= k
-            Pcomma p k             -> h b z (ind (go b p)) >>= k
-            Pcolon p k             -> h b z (ind (go b p)) >>= k
-            Pdot p k               -> h b z (ind (go b p)) >>= k
-            PsemiSep p k           -> h b z (ind (go b p)) >>= k
-            PsemiSep1 p k          -> h b z (ind (go b p)) >>= k
-            PcommaSep p k          -> h b z (ind (go b p)) >>= k
-            PcommaSep1 p k         -> h b z (ind (go b p)) >>= k
+            Pparens p k            -> h b z (ind False (go b p)) >>= k
+            Pbraces p k            -> h b z (ind False (go b p)) >>= k
+            Pangles p k            -> h b z (ind False (go b p)) >>= k
+            Pbrackets p k          -> h b z (ind False (go b p)) >>= k
+            Psquares p k           -> h b z (ind False (go b p)) >>= k
+            Psemi p k              -> h b z (ind False (go b p)) >>= k
+            Pcomma p k             -> h b z (ind False (go b p)) >>= k
+            Pcolon p k             -> h b z (ind False (go b p)) >>= k
+            Pdot p k               -> h b z (ind False (go b p)) >>= k
+            PsemiSep p k           -> h b z (ind True (go b p)) >>= k
+            PsemiSep1 p k          -> h b z (ind True (go b p)) >>= k
+            PcommaSep p k          -> h b z (ind True (go b p)) >>= k
+            PcommaSep1 p k         -> h b z (ind True (go b p)) >>= k
 
 eval :: forall s u m t a. P.Stream s m t => ParsecDSL s u m a -> P.ParsecT s u m a
-eval = eval' (const (const id)) (const (const id)) id
+eval = eval' (const (const id)) (const (const id)) (const id)

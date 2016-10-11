@@ -29,7 +29,7 @@ data ParseLog
     | forall s u m a. ParseFailed (ParsecF s u m a)
     | forall s u m a b. Show b => ParseSuccess b (ParsecF s u m a)
     | forall s u m a. ParseSuccessful (ParsecF s u m a)
-    | Indent
+    | Indent Bool
     | Dedent
 
 instance Show ParseLog where
@@ -37,7 +37,7 @@ instance Show ParseLog where
     show (ParseFailed p)     = "ParseFailed " ++ show p
     show (ParseSuccess a p)  = "ParseSuccess " ++ show a ++ " " ++ show p
     show (ParseSuccessful p) = "ParseSuccessful " ++ show p
-    show Indent              = "Indent"
+    show (Indent b)          = "Indent " ++ show b
     show Dedent              = "Dedent"
 
 $(makePrisms ''ParseLog)
@@ -46,6 +46,7 @@ data Result = Failure | Success | SuccessValue String | Pending
 
 data LogEntry = LogEntry
     { _leDepth  :: Int
+    , _leBranch :: Bool
     , _leShow   :: Bool
     , _leParser :: String
     , _leResult :: Result
@@ -55,7 +56,14 @@ $(makeLenses ''LogEntry)
 
 instance Show LogEntry where
     show LogEntry {..} =
-        replicate (_leDepth * 2) ' '
+        (if _leBranch
+         then replicate (pred _leDepth * 2) ' '
+                ++ case _leResult of
+                    Failure        -> "- "
+                    Success        -> "+ "
+                    SuccessValue _ -> "+ "
+                    Pending        -> "? "
+         else replicate (_leDepth * 2) ' ')
           ++ case _leResult of
               Failure          -> "("  ++ _leParser ++ ")"
               Success          -> _leParser
@@ -63,15 +71,16 @@ instance Show LogEntry where
               Pending          -> _leParser ++ "..."
 
 data RenderState = RenderState
-    { _rsIndex :: Int
-    , _rsStack :: [Int]
-    , _rsMap   :: Map Int LogEntry
+    { _rsIndex  :: Int
+    , _rsBranch :: Bool
+    , _rsStack  :: [Int]
+    , _rsMap    :: Map Int LogEntry
     }
 
 $(makeLenses ''RenderState)
 
 newRenderState :: RenderState
-newRenderState = RenderState 1 [] M.empty
+newRenderState = RenderState 1 False [] M.empty
 
 renderLog :: Bool -> [ParseLog] -> String
 renderLog showAll l =
@@ -83,13 +92,16 @@ renderLog showAll l =
   where
     go _ [] = return ""
     go n (x:xs) = case x of
-        Indent -> go (n+1) xs
-        Dedent -> go (n-1) xs
+        Indent b -> rsBranch .= b >> go (n+1) xs
+        Dedent   -> go (n-1) xs
 
-        ParseAttempt b p -> do
+        ParseAttempt shouldShow p -> do
             i <- use rsIndex
+            b <- use rsBranch
+            rsBranch .= False
             rsMap.at i ?= LogEntry { _leDepth  = n
-                                   , _leShow   = b
+                                   , _leBranch = b
+                                   , _leShow   = shouldShow
                                    , _leParser = show p
                                    , _leResult = Pending
                          }
@@ -131,9 +143,9 @@ attemptShow b t p = do
             return a)
         (appendLog (ParseFailed t) >> P.parserZero)
 
-indented :: MonadIO m => LogParsecT s u m a -> LogParsecT s u m a
-indented p = do
-    appendLog Indent
+indented :: MonadIO m => Bool -> LogParsecT s u m a -> LogParsecT s u m a
+indented b p = do
+    appendLog (Indent b)
     P.parserPlus
         (P.try p <* appendLog Dedent)
         (appendLog Dedent >> P.parserZero)
@@ -152,14 +164,14 @@ dumpLog theLog = flip evalStateT (0, M.empty :: Map Int String) $
                 liftIO $ putStrLn $ p ++ " /= " ++ p'
             indent (i-1) >> put (i-1, M.delete i m)
     case l of
-        ParseAttempt _ p   -> indent i >> put (i+1, M.insert i (show p) m)
-        ParseSuccess _ p   -> go (show p)
-        ParseSuccessful p  -> go (show p)
-        ParseFailed p      -> go (show p)
+        ParseAttempt _ p  -> indent i >> put (i+1, M.insert i (show p) m)
+        ParseSuccess _ p  -> go (show p)
+        ParseSuccessful p -> go (show p)
+        ParseFailed p     -> go (show p)
         _ -> return ()
     case l of
-        Indent -> return ()
-        Dedent -> return ()
+        Indent _ -> return ()
+        Dedent   -> return ()
         _ -> liftIO $ print l
   where
     indent n = liftIO $ putStr $ replicate n ' '
