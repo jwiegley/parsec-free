@@ -23,6 +23,8 @@ import Data.Typeable ( Typeable )
 import Text.Parsec.Prim
 import Text.Parsec.Combinator
 import qualified Text.Parsec.Free as F
+import qualified Text.Parsec.Free.Eval as F
+import qualified "parsec" Text.Parsec.Expr as P
 
 -----------------------------------------------------------
 -- Assoc and OperatorTable
@@ -43,9 +45,9 @@ data Assoc                = AssocNone
 data Operator s u m a   = Infix (ParsecT s u m (a -> a -> a)) Assoc
                         | Prefix (ParsecT s u m (a -> a))
                         | Postfix (ParsecT s u m (a -> a))
-#if MIN_VERSION_base(4,7,0)
-    deriving ( Typeable )
-#endif
+-- #if MIN_VERSION_base(4,7,0)
+--     deriving ( Typeable )
+-- #endif
 
 -- | An @OperatorTable s u m a@ is a list of @Operator s u m a@
 -- lists. The list is ordered in descending
@@ -94,6 +96,24 @@ buildExpressionParser :: (Stream s m t)
                       -> ParsecT s u m a
                       -> ParsecT s u m a
 buildExpressionParser operators simpleExpr
+    = flip F.label "buildExpressionParser"
+    $ F.quiet
+    $ F.lifted
+    $ P.buildExpressionParser (map (map f) operators)
+                              (F.eval simpleExpr)
+  where
+    f (Infix p AssocNone)  = P.Infix (F.eval p) P.AssocNone
+    f (Infix p AssocLeft)  = P.Infix (F.eval p) P.AssocLeft
+    f (Infix p AssocRight) = P.Infix (F.eval p) P.AssocRight
+    f (Prefix p)           = P.Prefix (F.eval p)
+    f (Postfix p)          = P.Postfix (F.eval p)
+
+{- jww (2016-10-10): For whatever reason, the Free-ized version of
+   'buildExpressionParser' fails with ambiguity problems, whereas simply
+    lifting the original version does not. This implies to me either an
+    associativity, or perhaps an order-of-evaluation problem, in Eval.hs. -}
+
+{-
     = F.quiet $ foldl (makeParser) simpleExpr operators
     where
       makeParser term ops
@@ -171,3 +191,4 @@ buildExpressionParser operators simpleExpr
 
       splitOp (Postfix op) (rassoc,lassoc,nassoc,prefix,postfix)
         = (rassoc,lassoc,nassoc,prefix,op:postfix)
+-}
