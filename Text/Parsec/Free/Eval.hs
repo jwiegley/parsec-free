@@ -75,7 +75,7 @@ eval' h hS ind = go True
             PparserZero            -> h b z P.parserZero
             Punexpected s          -> h b z (P.unexpected s)
 
-            PparserPlus p q k      -> h b z (ind (P.parserPlus (go b p) (go b q)))       >>= k
+            PparserPlus p q k      -> h b z (ind (P.parserPlus (ind (go b p)) (go b q))) >>= k
             Plabel p a k           -> h b z (ind (P.label (go b p) a))                   >>= k
             Plabels p a k          -> h b z (ind (P.labels (go b p) a))                  >>= k
             Ptry p k               -> h b z (ind (P.try (go b p)))                       >>= k
