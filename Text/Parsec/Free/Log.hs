@@ -75,8 +75,8 @@ instance Show LogEntry where
                     Pending          -> _leParser ++ "...")
             ++ if case _leResult of
                       Failure b _      -> b
-                      Success b        -> b
-                      SuccessValue b _ -> b
+                      Success b        -> False
+                      SuccessValue b _ -> False
                       Pending          -> False
                then " *"
                else ""

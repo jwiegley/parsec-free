@@ -6,29 +6,29 @@ None of your code should need to change.  Then, use `parseTestLog` rather than
 `parseTest`, and you should see output like the following:
 
 ```
-label "object name" *
-  reserved "object" *
-  identifier => "aascllwl" *
+label "object name"
+  reserved "object"
+  identifier => "aascllwl"
 parserPlus
 - (reserved "identity")
 + return
-parserPlus *
-+ reserved "state" *
-  label "var decls" *
-    sepEndBy1 *
-    + label "var decl" *
-        label "type" *
-          choice *
+parserPlus
++ reserved "state"
+  label "var decls"
+    sepEndBy1
+    + label "var decl"
+        label "type"
+          choice
           - (reserved "int")
           - (reserved "pointer")
-          + label "type name" *
-              identifier => "bool" *
-        commaSep1 *
-        + sepBy1 *
-          + label "variable name" *
-              identifier => "nlenshiy" *
+          + label "type name"
+              identifier => "bool"
+        commaSep1
+        + sepBy1
+          + label "variable name"
+              identifier => "nlenshiy"
           - (string ",")
-    + symbol ";" *
+    + symbol ";"
     - (label "var decl")
         (label "type")
           (choice)
@@ -36,25 +36,25 @@ parserPlus *
           - (reserved "pointer")
           - (label "type name")
               (identifier)
-parserPlus *
-+ reserved "events" *
-  sepEndBy1 *
-  + label "event defs" *
-      label "event definition kind" *
-        choice *
+parserPlus
++ reserved "events"
+  sepEndBy1
+  + label "event defs"
+      label "event definition kind"
+        choice
         - (reserved "internal")
-        + reserved "imported" *
-      label "error keyword" *
-        parserPlus *
-        + reserved "error" *
-      commaSep1 *
-      + sepBy1 *
-        + label "event name" *
-            identifier => "swehegge" *
-          label "event params" *
-            parens *
-              between *
-              + string "(" *
+        + reserved "imported"
+      label "error keyword"
+        parserPlus
+        + reserved "error"
+      commaSep1
+      + sepBy1
+        + label "event name"
+            identifier => "swehegge"
+          label "event params"
+            parens
+              between
+              + string "("
               + commaSep
                 + sepBy
                   - (label "type")
@@ -63,14 +63,14 @@ parserPlus *
                       - (reserved "pointer")
                       - (label "type name")
                           (identifier)
-              + string ")" *
-          label "event definiton" *
-            parserPlus *
-            + reservedOp "=" *
-              label "expr" *
-                label "buildExpressionParser" *
+              + string ")"
+          label "event definiton"
+            parserPlus
+            + reservedOp "="
+              label "expr"
+                label "buildExpressionParser"
         - (string ",")
-  + symbol ";" *
+  + symbol ";"
   - (label "event defs")
       (label "event definition kind")
         (choice)
@@ -90,8 +90,8 @@ Things to note in this output:
   children. These bullets have the following meaning: `-` if the parser
   failed, `+` if it succeeded, `?` if it was pending completion before an
   exception occurred.
-- A parser followed by `*` consumed input. Pay close attention to failed
-  parsers that consume input! They will prevent the second branch of `<|>`
-  from being attempted, or may indicate a need for `try`.
+- A failed parser followed by `*` also consumed input. These will prevent the
+  second branch of `<|>` from being attempted, and may indicate the need for
+  `try`.
 
 Also, `parserPlus` is the name for `<|>`, while `label` is `<?>`.
