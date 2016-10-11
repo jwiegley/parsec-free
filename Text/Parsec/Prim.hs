@@ -59,7 +59,6 @@ module Text.Parsec.Prim
     ) where
 
 
-import qualified Control.Applicative as Applicative (Alternative(..))
 import qualified Control.Exception as E
 import Control.Monad()
 import Control.Monad.Free (hoistFree)
@@ -113,14 +112,14 @@ infix  0 <?>
 infixr 1 <|>
 
 (<?>) :: (ParsecT s u m a) -> String -> (ParsecT s u m a)
-(<?>) = F.label
+(<?>) = label
 
 (<|>) :: (ParsecT s u m a) -> (ParsecT s u m a) -> (ParsecT s u m a)
 (<|>) = parserPlus
 
 -- | A synonym for @\<?>@, but as a function instead of an operator.
 label :: ParsecT s u m a -> String -> ParsecT s u m a
-label = (<?>)
+label = F.label
 
 labels :: ParsecT s u m a -> [String] -> ParsecT s u m a
 labels = F.labels
@@ -226,15 +225,16 @@ parseTestLog' p input = do
         Right x -> print x
 
 parseTestLog :: (Stream s (ReaderT F.LogType IO) t, Show a)
-             => ParsecT s () (ReaderT F.LogType IO) a -> s -> IO ()
-parseTestLog p input = do
+             => Bool -- ^ If True, display every parse, not just the interesting ones
+             -> ParsecT s () (ReaderT F.LogType IO) a -> s -> IO ()
+parseTestLog b p input = do
     lg <- newIORef []
     eres <- E.try $ runReaderT (parseTestLog' p input) lg
     putStrLn $ case eres of
         Left err -> "EXCEPTION => " ++ show (err :: E.SomeException)
         Right a  -> "Result => " ++ show a
     theLog <- readIORef lg
-    putStrLn $ F.renderLog False theLog
+    putStrLn $ F.renderLog b theLog
 
 -- | Returns the full parser state as a 'State' record.
 

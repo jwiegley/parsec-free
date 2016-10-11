@@ -352,31 +352,31 @@ data GenTokenParser s u m
 makeTokenParser :: (Stream s m Char)
                 => GenLanguageDef s u m -> GenTokenParser s u m
 makeTokenParser languageDef = TokenParser
-    { identifier     = F.liftF' $ F.Pidentifier identifier id
+    { identifier     =      F.liftF' $ F.Pidentifier identifier id
     , reserved       = \s -> F.liftF' $ F.Preserved (reserved s) s ()
-    , operator       = F.liftF' $ F.Poperator operator id
+    , operator       =      F.liftF' $ F.Poperator operator id
     , reservedOp     = \s -> F.liftF' $ F.PreservedOp (reservedOp s) s ()
-    , charLiteral    = F.liftF' $ F.PcharLiteral charLiteral id
-    , stringLiteral  = F.liftF' $ F.PstringLiteral stringLiteral id
-    , natural        = F.liftF' $ F.Pnatural natural id
-    , integer        = F.liftF' $ F.Pinteger integer id
-    , float          = F.liftF' $ F.Pfloat float id
-    , naturalOrFloat = F.liftF' $ F.PnaturalOrFloat naturalOrFloat id
-    , decimal        = F.liftF' $ F.Pdecimal decimal id
-    , hexadecimal    = F.liftF' $ F.Phexadecimal hexadecimal id
-    , octal          = F.liftF' $ F.Poctal octal id
+    , charLiteral    =      F.liftF' $ F.PcharLiteral charLiteral id
+    , stringLiteral  =      F.liftF' $ F.PstringLiteral stringLiteral id
+    , natural        =      F.liftF' $ F.Pnatural natural id
+    , integer        =      F.liftF' $ F.Pinteger integer id
+    , float          =      F.liftF' $ F.Pfloat float id
+    , naturalOrFloat =      F.liftF' $ F.PnaturalOrFloat naturalOrFloat id
+    , decimal        =      F.liftF' $ F.Pdecimal decimal id
+    , hexadecimal    =      F.liftF' $ F.Phexadecimal hexadecimal id
+    , octal          =      F.liftF' $ F.Poctal octal id
     , symbol         = \s -> F.liftF' $ F.Psymbol (symbol s) s id
     , lexeme         = \p -> F.liftF' $ F.Plexeme (lexeme p) id
-    , whiteSpace     = F.liftF' $ F.PwhiteSpace whiteSpace ()
+    , whiteSpace     =      F.liftF' $ F.PwhiteSpace whiteSpace ()
     , parens         = \p -> F.liftF' $ F.Pparens (parens p) id
     , braces         = \p -> F.liftF' $ F.Pbraces (braces p) id
     , angles         = \p -> F.liftF' $ F.Pangles (angles p) id
     , brackets       = \p -> F.liftF' $ F.Pbrackets (brackets p) id
     , squares        = \p -> F.liftF' $ F.Psquares (brackets p) id
-    , semi           = F.liftF' $ F.Psemi semi id
-    , comma          = F.liftF' $ F.Pcomma comma id
-    , colon          = F.liftF' $ F.Pcolon colon id
-    , dot            = F.liftF' $ F.Pdot dot id
+    , semi           =      F.liftF' $ F.Psemi semi id
+    , comma          =      F.liftF' $ F.Pcomma comma id
+    , colon          =      F.liftF' $ F.Pcolon colon id
+    , dot            =      F.liftF' $ F.Pdot dot id
     , semiSep        = \p -> F.liftF' $ F.PsemiSep (semiSep p) id
     , semiSep1       = \p -> F.liftF' $ F.PsemiSep1 (semiSep1 p) id
     , commaSep       = \p -> F.liftF' $ F.PcommaSep (commaSep p) id
@@ -679,7 +679,7 @@ makeTokenParser languageDef = TokenParser
         = lexeme (string name)
 
     lexeme p
-        = do{ x <- p; whiteSpace; return x  }
+        = do{ x <- p; F.quiet whiteSpace; return x  }
 
 
     --whiteSpace

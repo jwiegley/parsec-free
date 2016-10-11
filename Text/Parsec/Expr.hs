@@ -22,6 +22,7 @@ import Data.Typeable ( Typeable )
 
 import Text.Parsec.Prim
 import Text.Parsec.Combinator
+import qualified Text.Parsec.Free as F
 
 -----------------------------------------------------------
 -- Assoc and OperatorTable
@@ -93,7 +94,7 @@ buildExpressionParser :: (Stream s m t)
                       -> ParsecT s u m a
                       -> ParsecT s u m a
 buildExpressionParser operators simpleExpr
-    = foldl (makeParser) simpleExpr operators
+    = F.quiet $ foldl (makeParser) simpleExpr operators
     where
       makeParser term ops
         = let (rassoc,lassoc,nassoc

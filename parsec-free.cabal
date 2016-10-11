@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                parsec-free
-version:             3.1.11.4
+version:             3.1.11.5
 synopsis:            Parsec API encoded as a deeply-embedded DSL, for debugging and analysis
 description:         Parsec API encoded as a deeply-embedded DSL, for debugging and analysis
 homepage:            https://github.com/jwiegley/parsec-free

@@ -28,93 +28,95 @@ eval' h hS ind = go True . ann
       where
         psi :: forall y. ParsecF s u m y -> ParsecF s u m y
         psi z = case z of
-            PparserPlus p q k      -> PparserPlus (ann p) (ann q) k
-            Plabel p a k           -> Plabel (ann p) a k
-            Plabels p xs k         -> Plabels (ann p) xs k
-            Ptry p k               -> Ptry (ann p) k
-            Pchainl p q a k        -> Pchainl (ann p) (ann q) a k
-            Pchainl1 p q k         -> Pchainl1 (ann p) (ann q) k
-            Pchainr p q a k        -> Pchainr (ann p) (ann q) a k
-            Pchainr1 p q k         -> Pchainr1 (ann p) (ann q) k
-            Pchoice xs k           -> Pchoice (map ann xs) k
-            Pcount n p k           -> Pcount n (ann p) k
-            PlookAhead p k         -> PlookAhead (ann p) k
-            Pmany p k              -> Pmany (ann p) k
-            Pmany1 p k             -> Pmany1 (ann p) k
-            PmanyAccum acc p k     -> PmanyAccum acc (ann p) k
-            PnotFollowedBy p k     -> PnotFollowedBy (ann p) k
-            Poption a p k          -> Poption a (ann p) k
-            PoptionMaybe p k       -> PoptionMaybe (ann p) k
-            Poptional p k          -> Poptional (ann p) k
-            PskipMany p k          -> PskipMany (ann p) k
-            PskipMany1 p k         -> PskipMany1 (ann p) k
-            PmanyTill p e k        -> PmanyTill (ann p) (ann e) k
-            Pbetween o c p k       -> Pbetween (ann o) (ann c) (ann p) k
-            PendBy p s k           -> PendBy (ann p) (ann s) k
-            PendBy1 p s k          -> PendBy1 (ann p) (ann s) k
-            PsepBy p s k           -> PsepBy (ann p) (ann s) k
-            PsepBy1 p s k          -> PsepBy1 (ann p) (ann s) k
-            PsepEndBy p s k        -> PsepEndBy (ann p) (ann s) k
-            PsepEndBy1 p s k       -> PsepEndBy1 (ann p) (ann s) k
+            PparserPlus p q k   -> PparserPlus (ann p) (ann q) k
+            Plabel p a k        -> Plabel (ann p) a k
+            Plabels p xs k      -> Plabels (ann p) xs k
+            Ptry p k            -> Ptry (ann p) k
+            Pchainl p q a k     -> Pchainl (ann p) (ann q) a k
+            Pchainl1 p q k      -> Pchainl1 (ann p) (ann q) k
+            Pchainr p q a k     -> Pchainr (ann p) (ann q) a k
+            Pchainr1 p q k      -> Pchainr1 (ann p) (ann q) k
+            Pchoice xs k        -> Pchoice (map ann xs) k
+            Pcount n p k        -> Pcount n (ann p) k
+            PlookAhead p k      -> PlookAhead (ann p) k
+            Pmany p k           -> Pmany (ann p) k
+            Pmany1 p k          -> Pmany1 (ann p) k
+            PmanyAccum acc p k  -> PmanyAccum acc (ann p) k
+            PnotFollowedBy p k  -> PnotFollowedBy (ann p) k
+            Poption a p k       -> Poption a (ann p) k
+            PoptionMaybe p k    -> PoptionMaybe (ann p) k
+            Poptional p k       -> Poptional (ann p) k
+            PskipMany p k       -> PskipMany (ann p) k
+            PskipMany1 p k      -> PskipMany1 (ann p) k
+            PmanyTill p e k     -> PmanyTill (ann p) (ann e) k
+            Pbetween o c p k    -> Pbetween (ann o) (ann c) (ann p) k
+            PendBy p s k        -> PendBy (ann p) (ann s) k
+            PendBy1 p s k       -> PendBy1 (ann p) (ann s) k
+            PsepBy p s k        -> PsepBy (ann p) (ann s) k
+            PsepBy1 p s k       -> PsepBy1 (ann p) (ann s) k
+            PsepEndBy p s k     -> PsepEndBy (ann p) (ann s) k
+            PsepEndBy1 p s k    -> PsepEndBy1 (ann p) (ann s) k
 
-            Pidentifier d k        -> Pidentifier (ann d) k
-            Preserved d a k        -> Preserved (ann d) a k
-            Poperator d k          -> Poperator (ann d) k
-            PreservedOp d a k      -> PreservedOp (ann d) a k
-            PcharLiteral d k       -> PcharLiteral (ann d) k
-            PstringLiteral d k     -> PstringLiteral (ann d) k
-            Pnatural d k           -> Pnatural (ann d) k
-            Pinteger d k           -> Pinteger (ann d) k
-            Pfloat d k             -> Pfloat (ann d) k
-            PnaturalOrFloat d k    -> PnaturalOrFloat (ann d) k
-            Pdecimal d k           -> Pdecimal (ann d) k
-            Phexadecimal d k       -> Phexadecimal (ann d) k
-            Poctal d k             -> Poctal (ann d) k
-            Psymbol d a k          -> Psymbol (ann d) a k
-            Plexeme d k            -> Plexeme (ann d) k
-            PwhiteSpace d k        -> PwhiteSpace (ann d) k
+            Pidentifier d k     -> Pidentifier (ann d) k
+            Preserved d a k     -> Preserved (ann d) a k
+            Poperator d k       -> Poperator (ann d) k
+            PreservedOp d a k   -> PreservedOp (ann d) a k
+            PcharLiteral d k    -> PcharLiteral (ann d) k
+            PstringLiteral d k  -> PstringLiteral (ann d) k
+            Pnatural d k        -> Pnatural (ann d) k
+            Pinteger d k        -> Pinteger (ann d) k
+            Pfloat d k          -> Pfloat (ann d) k
+            PnaturalOrFloat d k -> PnaturalOrFloat (ann d) k
+            Pdecimal d k        -> Pdecimal (ann d) k
+            Phexadecimal d k    -> Phexadecimal (ann d) k
+            Poctal d k          -> Poctal (ann d) k
+            Psymbol d a k       -> Psymbol (ann d) a k
+            Plexeme d k         -> Plexeme (ann d) k
+            PwhiteSpace d k     -> PwhiteSpace (ann d) k
 
-            Pparens p k            -> Pparens (ann p) k
-            Pbraces p k            -> Pbraces (ann p) k
-            Pangles p k            -> Pangles (ann p) k
-            Pbrackets p k          -> Pbrackets (ann p) k
-            Psquares p k           -> Psquares (ann p) k
-            Psemi p k              -> Psemi (ann p) k
-            Pcomma p k             -> Pcomma (ann p) k
-            Pcolon p k             -> Pcolon (ann p) k
-            Pdot p k               -> Pdot (ann p) k
-            PsemiSep p k           -> PsemiSep (ann p) k
-            PsemiSep1 p k          -> PsemiSep1 (ann p) k
-            PcommaSep p k          -> PcommaSep (ann p) k
-            PcommaSep1 p k         -> PcommaSep1 (ann p) k
+            Pparens p k         -> Pparens (ann p) k
+            Pbraces p k         -> Pbraces (ann p) k
+            Pangles p k         -> Pangles (ann p) k
+            Pbrackets p k       -> Pbrackets (ann p) k
+            Psquares p k        -> Psquares (ann p) k
+            Psemi p k           -> Psemi (ann p) k
+            Pcomma p k          -> Pcomma (ann p) k
+            Pcolon p k          -> Pcolon (ann p) k
+            Pdot p k            -> Pdot (ann p) k
+            PsemiSep p k        -> PsemiSep (ann p) k
+            PsemiSep1 p k       -> PsemiSep1 (ann p) k
+            PcommaSep p k       -> PcommaSep (ann p) k
+            PcommaSep1 p k      -> PcommaSep1 (ann p) k
 
             _ -> z
 
     go :: forall x. Bool -> ParsecDSL s u m x -> P.ParsecT s u m x
     go True (ParsecDSL (Pure x)) = h True (Preturn x) (return x)
-    go b (ParsecDSL prs)         = iterM phi prs
+    go b (ParsecDSL prs) = iterM phi prs
       where
         phi :: forall y. ParsecF s u m (P.ParsecT s u m y) -> P.ParsecT s u m y
         phi z = case z of
-            Preturn k              -> h b z (return ()) >> k
-            Pbind k                -> h False z (return ()) >> k
-            Peffect m k            -> h b z (lift m) >>= k
+            Plifted p k            -> h False z p            >>= k
+            Preturn k              -> h b z (return ())      >>  k
+            Pbind k                -> h False z (return ())  >>  k
+            Peffect m k            -> h b z (lift m)         >>= k
+            Pquiet p k             -> h False z (go False p) >>= k
 
-            PgetState k            -> h b z P.getState >>= k
-            PputState u k          -> h b z (P.putState u) >> k
-            PmodifyState g k       -> h b z (P.modifyState g) >> k
+            PgetState k            -> h b z P.getState        >>= k
+            PputState u k          -> h b z (P.putState u)    >>  k
+            PmodifyState g k       -> h b z (P.modifyState g) >>  k
 
-            PgetPosition k         -> h b z P.getPosition >>= k
-            PsetPosition p k       -> h b z (P.setPosition p) >> k
+            PgetPosition k         -> h b z P.getPosition     >>= k
+            PsetPosition p k       -> h b z (P.setPosition p) >>  k
 
-            PgetInput k            -> h b z P.getInput >>= k
-            PsetInput s k          -> h b z (P.setInput s) >> k
+            PgetInput k            -> h b z P.getInput     >>= k
+            PsetInput s k          -> h b z (P.setInput s) >>  k
 
-            PgetParserState k      -> h b z P.getParserState >>= k
-            PsetParserState s k    -> h b z (P.setParserState s) >>= k
+            PgetParserState k      -> h b z P.getParserState        >>= k
+            PsetParserState s k    -> h b z (P.setParserState s)    >>= k
             PupdateParserState g k -> h b z (P.updateParserState g) >>= k
 
-            Ptokens a e c k        -> h b z (P.tokens a e c) >>= k
+            Ptokens a e c k        -> h b z (P.tokens a e c)        >>= k
             PtokenPrimEx a e c d k -> h b z (P.tokenPrimEx a e c d) >>= k
 
             PalphaNum k            -> hS b z P.alphaNum    >>= k
@@ -143,34 +145,34 @@ eval' h hS ind = go True . ann
             PparserZero            -> h b z P.parserZero
             Punexpected s          -> h b z (P.unexpected s)
 
-            PparserPlus p q k      -> h b z (ind (P.parserPlus (go b p) (go b q))) >>= k
-            Plabel p a k           -> h b z (ind (P.label (go b p) a)) >>= k
-            Plabels p a k          -> h b z (ind (P.labels (go b p) a)) >>= k
-            Ptry p k               -> h b z (ind (P.try (go b p))) >>= k
-            Pchainl p q a k        -> h b z (ind (P.chainl (go b p) (go b q) a)) >>= k
-            Pchainl1 p q k         -> h b z (ind (P.chainl1 (go b p) (go b q))) >>= k
-            Pchainr p q a k        -> h b z (ind (P.chainr (go b p) (go b q) a)) >>= k
-            Pchainr1 p q k         -> h b z (ind (P.chainr1 (go b p) (go b q))) >>= k
-            Pchoice xs k           -> h b z (ind (P.choice (map (go b) xs))) >>= k
-            Pcount n p k           -> h b z (ind (P.count n (go b p))) >>= k
-            PlookAhead p k         -> h b z (ind (P.lookAhead (go b p))) >>= k
-            Pmany p k              -> h b z (ind (P.many (go b p))) >>= k
-            Pmany1 p k             -> h b z (ind (P.many1 (go b p))) >>= k
-            PmanyAccum acc p k     -> h b z (ind (P.manyAccum acc (go b p))) >>= k
-            PnotFollowedBy p k     -> h b z (ind (P.notFollowedBy (go b p))) >>  k
-            Poption a p k          -> h b z (ind (P.option a (go b p))) >>= k
-            PoptionMaybe p k       -> h b z (ind (P.optionMaybe (go b p))) >>= k
-            Poptional p k          -> h b z (ind (P.optional (go b p))) >>  k
-            PskipMany p k          -> h b z (ind (P.skipMany (go b p))) >>  k
-            PskipMany1 p k         -> h b z (ind (P.skipMany1 (go b p))) >>  k
-            PmanyTill p e k        -> h b z (ind (P.manyTill (go b p) (go b e))) >>= k
+            PparserPlus p q k      -> h b z (ind (P.parserPlus (go b p) (go b q)))       >>= k
+            Plabel p a k           -> h b z (ind (P.label (go b p) a))                   >>= k
+            Plabels p a k          -> h b z (ind (P.labels (go b p) a))                  >>= k
+            Ptry p k               -> h b z (ind (P.try (go b p)))                       >>= k
+            Pchainl p q a k        -> h b z (ind (P.chainl (go b p) (go b q) a))         >>= k
+            Pchainl1 p q k         -> h b z (ind (P.chainl1 (go b p) (go b q)))          >>= k
+            Pchainr p q a k        -> h b z (ind (P.chainr (go b p) (go b q) a))         >>= k
+            Pchainr1 p q k         -> h b z (ind (P.chainr1 (go b p) (go b q)))          >>= k
+            Pchoice xs k           -> h b z (ind (P.choice (map (go b) xs)))             >>= k
+            Pcount n p k           -> h b z (ind (P.count n (go b p)))                   >>= k
+            PlookAhead p k         -> h b z (ind (P.lookAhead (go b p)))                 >>= k
+            Pmany p k              -> h b z (ind (P.many (go b p)))                      >>= k
+            Pmany1 p k             -> h b z (ind (P.many1 (go b p)))                     >>= k
+            PmanyAccum acc p k     -> h b z (ind (P.manyAccum acc (go b p)))             >>= k
+            PnotFollowedBy p k     -> h b z (ind (P.notFollowedBy (go b p)))             >>  k
+            Poption a p k          -> h b z (ind (P.option a (go b p)))                  >>= k
+            PoptionMaybe p k       -> h b z (ind (P.optionMaybe (go b p)))               >>= k
+            Poptional p k          -> h b z (ind (P.optional (go b p)))                  >>  k
+            PskipMany p k          -> h b z (ind (P.skipMany (go b p)))                  >>  k
+            PskipMany1 p k         -> h b z (ind (P.skipMany1 (go b p)))                 >>  k
+            PmanyTill p e k        -> h b z (ind (P.manyTill (go b p) (go b e)))         >>= k
             Pbetween o c p k       -> h b z (ind (P.between (go b o) (go b c) (go b p))) >>= k
-            PendBy p s k           -> h b z (ind (P.endBy (go b p) (go b s))) >>= k
-            PendBy1 p s k          -> h b z (ind (P.endBy1 (go b p) (go b s))) >>= k
-            PsepBy p s k           -> h b z (ind (P.sepBy (go b p) (go b s))) >>= k
-            PsepBy1 p s k          -> h b z (ind (P.sepBy1 (go b p) (go b s))) >>= k
-            PsepEndBy p s k        -> h b z (ind (P.sepEndBy (go b p) (go b s))) >>= k
-            PsepEndBy1 p s k       -> h b z (ind (P.sepEndBy1 (go b p) (go b s))) >>= k
+            PendBy p s k           -> h b z (ind (P.endBy (go b p) (go b s)))            >>= k
+            PendBy1 p s k          -> h b z (ind (P.endBy1 (go b p) (go b s)))           >>= k
+            PsepBy p s k           -> h b z (ind (P.sepBy (go b p) (go b s)))            >>= k
+            PsepBy1 p s k          -> h b z (ind (P.sepBy1 (go b p) (go b s)))           >>= k
+            PsepEndBy p s k        -> h b z (ind (P.sepEndBy (go b p) (go b s)))         >>= k
+            PsepEndBy1 p s k       -> h b z (ind (P.sepEndBy1 (go b p) (go b s)))        >>= k
 
             Pidentifier d k        -> hS b z (go False d) >>= k
             Preserved d _ k        -> h  b z (go False d) >>  k
@@ -185,7 +187,7 @@ eval' h hS ind = go True . ann
             Pdecimal d k           -> hS b z (go False d) >>= k
             Phexadecimal d k       -> hS b z (go False d) >>= k
             Poctal d k             -> hS b z (go False d) >>= k
-            Psymbol d _ k          -> hS b z (go False d) >>= k
+            Psymbol d _ k          -> h  b z (go False d) >>= k
             Plexeme d k            -> h  b z (go False d) >>= k
             PwhiteSpace d k        -> hS b z (go False d) >>  k
 

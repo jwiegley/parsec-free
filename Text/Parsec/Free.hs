@@ -63,6 +63,7 @@ data ParsecF s u m r
     | Preturn r
     | Pbind r
     | forall a. Peffect (m a) (a -> r)
+    | forall a. Pquiet (ParsecDSL s u m a) (a -> r)
 
     | PgetState (u -> r)
     | PputState u r
@@ -171,9 +172,11 @@ data ParsecF s u m r
 
 instance Functor (ParsecF s u m) where
     fmap f = \case
+        Plifted p k            -> Plifted p (f . k)
         Preturn x              -> Preturn (f x)
         Pbind r                -> Pbind (f r)
         Peffect m k            -> Peffect m (f . k)
+        Pquiet p k             -> Pquiet p (f . k)
 
         PgetState k            -> PgetState (f . k)
         PputState u r          -> PputState u (f r)
@@ -275,9 +278,11 @@ instance Functor (ParsecF s u m) where
 
 instance Show (ParsecF s u m r) where
     show = \case
+        Plifted _ _            -> "lifted"
         Preturn _              -> "return"
         Pbind _                -> "bind"
         Peffect _ _            -> "effect"
+        Pquiet _ _             -> "quiet"
 
         PgetState _            -> "getState"
         PputState _ _          -> "putState"
@@ -379,6 +384,12 @@ instance Show (ParsecF s u m r) where
 
 liftF' :: ParsecF s u m a -> ParsecDSL s u m a
 liftF' x = ParsecDSL $ Free (fmap pure x)
+
+lifted :: P.ParsecT s u m a -> ParsecDSL s u m a
+lifted p = liftF' $ Plifted p id
+
+quiet :: ParsecDSL s u m a -> ParsecDSL s u m a
+quiet p = liftF' $ Pquiet p id
 
 getState :: ParsecDSL s u m u
 getState = liftF' $ PgetState id
