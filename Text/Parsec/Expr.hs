@@ -91,7 +91,7 @@ type OperatorTable s u m a = [[Operator s u m a]]
 -- >  prefix  name fun       = Prefix (do{ reservedOp name; return fun })
 -- >  postfix name fun       = Postfix (do{ reservedOp name; return fun })
 
-buildExpressionParser :: (Stream s m t)
+buildExpressionParser :: (Show t, Stream s m t)
                       => OperatorTable s u m a
                       -> ParsecT s u m a
                       -> ParsecT s u m a

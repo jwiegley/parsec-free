@@ -132,9 +132,9 @@ renderLog showAll l =
 appendLog :: (MonadIO m, MonadReader LogType m) => ParseLog -> m ()
 appendLog l = ask >>= \ref -> liftIO (modifyIORef ref (l:))
 
-attempt :: MonadIO m
-        => Bool -> ParsecF s u' m b -> LogParsecT s u m a
-        -> LogParsecT s u m a
+attempt :: (MonadIO m, MonadReader LogType m)
+        => Bool -> ParsecF s u' m b -> P.ParsecT s u m a
+        -> P.ParsecT s u m a
 attempt b t p = P.mkPT $ \s -> do
     appendLog (ParseAttempt b t)
     res <- P.runParsecT p s
@@ -151,9 +151,9 @@ attempt b t p = P.mkPT $ \s -> do
         P.Consumed r -> r
         P.Empty    r -> r
 
-attemptShow :: (MonadIO m, Show a)
-            => Bool -> ParsecF s u' m b -> LogParsecT s u m a
-            -> LogParsecT s u m a
+attemptShow :: (MonadIO m, MonadReader LogType m, Show a)
+            => Bool -> ParsecF s u' m b -> P.ParsecT s u m a
+            -> P.ParsecT s u m a
 attemptShow b t p = P.mkPT $ \s -> do
     appendLog (ParseAttempt b t)
     res <- P.runParsecT p s
@@ -170,16 +170,16 @@ attemptShow b t p = P.mkPT $ \s -> do
         P.Consumed r -> r
         P.Empty    r -> r
 
-indented :: MonadIO m
-         => Bool -> LogParsecT s u m a -> LogParsecT s u m a
+indented :: (MonadIO m, MonadReader LogType m)
+         => Bool -> P.ParsecT s u m a -> P.ParsecT s u m a
 indented b p = P.mkPT $ \s -> do
     appendLog (Indent b)
     res <- P.runParsecT p s
     appendLog Dedent
     return res
 
-evalLog :: (MonadIO m, P.Stream s m t)
-        => ParsecDSL s u m a -> LogParsecT s u m a
+evalLog :: (MonadIO m, MonadReader LogType m, P.Stream s m t, Show t)
+        => ParsecDSL s u m a -> P.ParsecT s u m a
 evalLog = eval' attempt attemptShow indented
 
 dumpLog :: MonadIO m => [ParseLog] -> m ()
