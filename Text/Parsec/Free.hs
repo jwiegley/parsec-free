@@ -30,8 +30,10 @@ instance Alternative (ParsecDSL s u m) where
     empty = parserZero
     (<|>) = parserPlus
 
+#if __GLASGOW_HASKELL__ >= 880
 instance MonadFail (ParsecDSL s u m) where
     fail _ = parserZero
+#endif
 
 instance MonadPlus (ParsecDSL s u m) where
     mzero = parserZero
