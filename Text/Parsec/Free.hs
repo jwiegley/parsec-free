@@ -30,6 +30,9 @@ instance Alternative (ParsecDSL s u m) where
     empty = parserZero
     (<|>) = parserPlus
 
+instance MonadFail (ParsecDSL s u m) where
+    fail _ = parserZero
+
 instance MonadPlus (ParsecDSL s u m) where
     mzero = parserZero
     mplus = parserPlus

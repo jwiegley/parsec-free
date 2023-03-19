@@ -174,24 +174,24 @@ manyAccum :: (a -> [a] -> [a])
           -> ParsecT s u m [a]
 manyAccum = F.manyAccum
 
-runPT :: (Monad m, Stream s m t)
+runPT :: (Monad m, Show t, Stream s m t)
       => ParsecT s u m a -> u -> SourceName -> s -> m (Either ParseError a)
 runPT = P.runPT . F.eval
 
-runPTLog :: (MonadIO m, MonadReader F.LogType m, Stream s m t)
+runPTLog :: (MonadIO m, MonadReader F.LogType m, Show t, Stream s m t)
          => ParsecT s u m a -> u -> SourceName -> s
          -> m (Either ParseError a)
 runPTLog = P.runPT . F.evalLog
 
-runP :: (Stream s Identity t)
+runP :: (Show t, Stream s Identity t)
      => Parsec s u a -> u -> SourceName -> s -> Either ParseError a
 runP p u n s = runIdentity $ P.runPT (F.eval p) u n s
 
-runParserT :: (Stream s m t)
+runParserT :: (Show t, Stream s m t)
            => ParsecT s u m a -> u -> SourceName -> s -> m (Either ParseError a)
 runParserT = runPT
 
-runParserTLog :: (MonadIO m, MonadReader F.LogType m, Stream s m t)
+runParserTLog :: (MonadIO m, MonadReader F.LogType m, Show t, Stream s m t)
               => ParsecT s u m a
               -> u
               -> SourceName
@@ -199,15 +199,15 @@ runParserTLog :: (MonadIO m, MonadReader F.LogType m, Stream s m t)
               -> m (Either ParseError a)
 runParserTLog = runPTLog
 
-runParser :: (Stream s Identity t)
+runParser :: (Show t, Stream s Identity t)
           => Parsec s u a -> u -> SourceName -> s -> Either ParseError a
 runParser = runP
 
-parse :: (Stream s Identity t)
+parse :: (Show t, Stream s Identity t)
       => Parsec s () a -> SourceName -> s -> Either ParseError a
 parse p = runP p ()
 
-parseTest :: (Stream s Identity t, Show a)
+parseTest :: (Show t, Stream s Identity t, Show a)
           => Parsec s () a -> s -> IO ()
 parseTest p input
     = case parse p "" input of
@@ -215,7 +215,7 @@ parseTest p input
                        print err
         Right x  -> print x
 
-parseTestLog' :: (MonadIO m, MonadReader F.LogType m, Stream s m t, Show a)
+parseTestLog' :: (MonadIO m, MonadReader F.LogType m, Show t, Stream s m t, Show a)
               => ParsecT s () m a -> s -> m ()
 parseTestLog' p input = do
     eres <- runPTLog p () "" input
@@ -224,7 +224,7 @@ parseTestLog' p input = do
                        print err
         Right x -> print x
 
-parseTestLog :: (Stream s (ReaderT F.LogType IO) t, Show a)
+parseTestLog :: (Show t, Stream s (ReaderT F.LogType IO) t, Show a)
              => Bool -- ^ If True, display every parse, not just the interesting ones
              -> ParsecT s () (ReaderT F.LogType IO) a -> s -> IO ()
 parseTestLog b p input = do

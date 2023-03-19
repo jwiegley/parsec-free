@@ -11,7 +11,7 @@ import qualified "parsec" Text.Parsec.Combinator as P
 import                    Text.Parsec.Free
 import qualified "parsec" Text.Parsec.Prim as P
 
-eval' :: forall s u m t a. P.Stream s m t
+eval' :: forall s u m t a. (Show t, P.Stream s m t)
       => (forall u' b c. Bool -> ParsecF s u' m c -> P.ParsecT s u m b
               -> P.ParsecT s u m b)
       -> (forall u' b c. Show b => Bool -> ParsecF s u' m c -> P.ParsecT s u m b
@@ -149,5 +149,5 @@ eval' h hS ind = go True
             PcommaSep p k          -> h b z (ind True (go b p)) >>= k
             PcommaSep1 p k         -> h b z (ind True (go b p)) >>= k
 
-eval :: forall s u m t a. P.Stream s m t => ParsecDSL s u m a -> P.ParsecT s u m a
+eval :: forall s u m t a. (Show t, P.Stream s m t) => ParsecDSL s u m a -> P.ParsecT s u m a
 eval = eval' (const (const id)) (const (const id)) (const id)
