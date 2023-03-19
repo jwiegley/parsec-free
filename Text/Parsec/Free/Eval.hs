@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Text.Parsec.Free.Eval where
 
@@ -56,7 +57,7 @@ eval' h hS ind = go True
             Pcrlf k                -> hS b z P.crlf        >>= k
             Pdigit k               -> hS b z P.digit       >>= k
             PendOfLine k           -> hS b z P.endOfLine   >>= k
-            Peof k                 -> hS b z P.eof         >>  k
+            Peof k                 -> hS b z (P.eof @_ @_ @t) >>  k
             PhexDigit k            -> hS b z P.hexDigit    >>= k
             Pletter k              -> hS b z P.letter      >>= k
             Plower k               -> hS b z P.lower       >>= k
