@@ -6,7 +6,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ['8.6.5', '8.8.4', '8.10.7', '9.0.2', '9.2.1']
+        ghc: ['8.8.4', '8.10.7', '9.0.2', '9.2.7', '9.4.4']
     name: Build with GHC ${{ matrix.ghc }}
     steps:
     - uses: actions/checkout@v2
@@ -15,7 +15,6 @@ jobs:
       with:
         ghc-version: ${{ matrix.ghc }}
 
-    - run: cp cabal.project.ci cabal.project.local
     - run: cabal v2-update
     - run: cabal v2-freeze
     - uses: actions/cache@v2
